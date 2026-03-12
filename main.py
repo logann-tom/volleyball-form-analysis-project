@@ -4,6 +4,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from player_data import PlayerData
 import cv2
+import math
 SCALE = .4
 debug = True
 padding = 5
@@ -89,7 +90,15 @@ def closest_pose_to_roi(pose_landmarks_list, w, h, roi_cx, roi_cy):
             best_idx = i
     return best_idx
 
-
+def _get_dist_2d(p1, p2):
+    dx = p1.x - p2.x
+    dy = p1.y - p2.y  
+    return math.sqrt(dx**2 + dy**2)
+def _get_dist_3d(p1,p2):
+    dx = p1.x - p2.x
+    dy = p1.y - p2.y  
+    dz = p1.z - p2.z
+    return math.sqrt(dx**2 + dy**2 + dz**2)
 
 paused = False
 frame_num = 0
@@ -113,6 +122,8 @@ while cap.isOpened():
         if not ret:
             break
         process_frame = True
+    elif key == ord('d'):
+        print(frame_num)
 
     if process_frame:
         frame_num = frame_num + 1
@@ -126,11 +137,18 @@ while cap.isOpened():
         mp_image = mp.Image(image_format=mp.ImageFormat.SRGB, data=rgb)
         result = landmarker.detect(mp_image)
         
-
+        
         if result.pose_landmarks:
+            lm = result.pose_landmarks[0]
+            wlm = result.pose_world_landmarks[0]
+            print(f"Frame {frame_num}:")
+            print(f"  2D shoulder dist: {_get_dist_2d(lm[11], lm[12]):.3f}")
+            print(f"  3D shoulder dist: {_get_dist_3d(wlm[11], wlm[12]):.3f}")
             idx = closest_pose_to_roi(result.pose_landmarks, x_end - x_start, y_end - y_start, (x_end - x_start) / 2, (y_end - y_start) / 2)
             landmarks = result.pose_landmarks[idx]
-            hitter.update(frame_num, landmarks)
+            crop_w = x_end - x_start
+            crop_h = y_end - y_start
+            hitter.update(frame_num, landmarks, crop_w, crop_h)
 
             for lm in landmarks:
                 # translate from crop space to full frame space
@@ -163,3 +181,5 @@ while cap.isOpened():
 
         display = cv2.resize(frame, (int(w * SCALE), int(h * SCALE)))
         cv2.imshow("Pose", display)
+
+print(hitter.getAllMetrics())
