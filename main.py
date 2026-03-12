@@ -2,6 +2,7 @@ import numpy as np
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from player_data import PlayerData
 import cv2
 SCALE = .4
 debug = True
@@ -67,6 +68,8 @@ rx, ry, rw, rh = [int (v/SCALE) for v in roi]
 roi_cx = rx + rw / 2
 roi_cy = ry + rh / 2
 max_drift = rw * .6
+box_h = rh + padding
+box_w = rw + padding
 
 def closest_pose_to_roi(pose_landmarks_list, w, h, roi_cx, roi_cy):
     best_idx = 0
@@ -85,8 +88,12 @@ def closest_pose_to_roi(pose_landmarks_list, w, h, roi_cx, roi_cy):
             best_dist = dist
             best_idx = i
     return best_idx
+
+
+
 paused = False
 frame_num = 0
+hitter = PlayerData(fps)
 while cap.isOpened():
     if not paused:
         ret, frame = cap.read()
@@ -110,8 +117,6 @@ while cap.isOpened():
     if process_frame:
         frame_num = frame_num + 1
         h, w = frame.shape[:2]
-        box_h = rh + padding
-        box_w = rw + padding
         y_start = max(0, int(roi_cy - box_h/2))
         y_end = min(h, int(roi_cy + box_h/2))
         x_start = max(0, int(roi_cx - box_w/2))
@@ -125,12 +130,21 @@ while cap.isOpened():
         if result.pose_landmarks:
             idx = closest_pose_to_roi(result.pose_landmarks, x_end - x_start, y_end - y_start, (x_end - x_start) / 2, (y_end - y_start) / 2)
             landmarks = result.pose_landmarks[idx]
+            hitter.update(frame_num, landmarks)
 
             for lm in landmarks:
                 # translate from crop space to full frame space
                 full_x = int(x_start + lm.x * (x_end - x_start))
                 full_y = int(y_start + lm.y * (y_end - y_start))
                 cv2.circle(frame, (full_x, full_y), 4, (0, 0, 255), -1)
+            
+            for a, b in POSE_CONNECTIONS:
+                a_x = int(x_start + landmarks[a].x * (x_end - x_start))
+                a_y = int(y_start + landmarks[a].y * (y_end - y_start))
+                b_x = int(x_start + landmarks[b].x * (x_end - x_start))
+                b_y = int(y_start + landmarks[b].y * (y_end - y_start))
+                cv2.line(frame,(a_x,a_y), (b_x,b_y), (0, 255, 0),3)
+                    
 
             lshoulder, rshoulder = landmarks[11], landmarks[12]
             lhip, rhip = landmarks[23], landmarks[24]
