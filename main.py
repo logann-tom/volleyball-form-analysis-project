@@ -3,9 +3,11 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from player_data import PlayerData
+from metric_extractor import MetricExtractor
 import cv2
 import math
 SCALE = .4
+
 debug = True
 padding = 5
 # 0 - nose
@@ -57,7 +59,7 @@ options = vision.PoseLandmarkerOptions(
 )
 landmarker = vision.PoseLandmarker.create_from_options(options)
 # Open video and grab first frame for ROI selection
-cap = cv2.VideoCapture("media/hit1.mp4")
+cap = cv2.VideoCapture("media\hit2 - Trim.mp4")
 fps = cap.get(cv2.CAP_PROP_FPS)
 ret, first_frame = cap.read()
 h, w = first_frame.shape[:2]
@@ -90,19 +92,10 @@ def closest_pose_to_roi(pose_landmarks_list, w, h, roi_cx, roi_cy):
             best_idx = i
     return best_idx
 
-def _get_dist_2d(p1, p2):
-    dx = p1.x - p2.x
-    dy = p1.y - p2.y  
-    return math.sqrt(dx**2 + dy**2)
-def _get_dist_3d(p1,p2):
-    dx = p1.x - p2.x
-    dy = p1.y - p2.y  
-    dz = p1.z - p2.z
-    return math.sqrt(dx**2 + dy**2 + dz**2)
-
 paused = False
 frame_num = 0
 hitter = PlayerData(fps)
+contact_frame = -100
 while cap.isOpened():
     if not paused:
         ret, frame = cap.read()
@@ -124,6 +117,9 @@ while cap.isOpened():
         process_frame = True
     elif key == ord('d'):
         print(frame_num)
+    elif key == ord('c'):
+        contact_frame = frame_num
+        print(f"Contact tagged at frame {frame_num}")
 
     if process_frame:
         frame_num = frame_num + 1
@@ -139,11 +135,8 @@ while cap.isOpened():
         
         
         if result.pose_landmarks:
-            lm = result.pose_landmarks[0]
-            wlm = result.pose_world_landmarks[0]
+
             print(f"Frame {frame_num}:")
-            print(f"  2D shoulder dist: {_get_dist_2d(lm[11], lm[12]):.3f}")
-            print(f"  3D shoulder dist: {_get_dist_3d(wlm[11], wlm[12]):.3f}")
             idx = closest_pose_to_roi(result.pose_landmarks, x_end - x_start, y_end - y_start, (x_end - x_start) / 2, (y_end - y_start) / 2)
             landmarks = result.pose_landmarks[idx]
             crop_w = x_end - x_start
@@ -182,4 +175,27 @@ while cap.isOpened():
         display = cv2.resize(frame, (int(w * SCALE), int(h * SCALE)))
         cv2.imshow("Pose", display)
 
-print(hitter.getAllMetrics())
+
+#GRAPHING
+extractor = MetricExtractor(hitter, fps = fps, contact_frame= contact_frame)
+extractor.graph_velocities()
+max_shoulder_velocity, peak_timing_ms_before_contact, onset_ms_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
+#ANALYSIS
+BENCHMARKS = {
+    "male": {
+        'peak_trunk_velocity': 400,
+        'onset_ms_before_contact': 200, #220 for pro, 180 for reg
+        'peak_timing_ms_before_contact': {"pro": 60, "junior": 80} #peak velocity ms before contact pro 60ms before contact, teens 80ms
+
+    },
+    'female': {
+        'peak_trunk_velocity': 300,
+        'onset_ms_before_contact': {"pro" : 220, "junior": 180}, #220 for pro, 180 for reg
+        'peak_timing_ms_before_contact': {"pro": 50, "junior": 80} #peak velocity ms before contact pro 50ms before contact, teens 80ms
+    }
+}
+
+
+
+
+    
