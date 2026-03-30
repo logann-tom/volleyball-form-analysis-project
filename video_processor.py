@@ -141,8 +141,6 @@ class VideoProcessor:
                 
                 
                 if result.pose_landmarks:
-
-                    print(f"Frame {frame_num}:")
                     idx = self._closest_pose_to_roi(result.pose_landmarks, x_end - x_start, y_end - y_start, (x_end - x_start) / 2, (y_end - y_start) / 2)
                     landmarks = result.pose_landmarks[idx]
                     crop_w = x_end - x_start
