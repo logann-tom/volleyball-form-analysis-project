@@ -37,7 +37,7 @@ class MetricExtractor:
         plt.axvline(self.contact_frame)
         plt.xlabel("frames")
         plt.legend()
-        plt.show()
+        plt.show(block = False)
 
         
     def get_onset_frame(self, velocities, min_consecutive=3):

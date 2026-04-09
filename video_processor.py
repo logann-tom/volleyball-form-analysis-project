@@ -5,6 +5,7 @@ from mediapipe.tasks.python import vision
 from player_data import PlayerData
 from metric_extractor import MetricExtractor
 import cv2
+from pathlib import Path
 
 SCALE = .4
 debug = True
@@ -62,6 +63,9 @@ class VideoProcessor:
 
     def __init__(self, video_path, name):
         self.name = name
+        if not Path(video_path).is_file():
+            print("file does not exist")
+            raise FileNotFoundError("Video path is invalid please try again")
         self.cap = cv2.VideoCapture(video_path)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.hitter = PlayerData(self.fps)
