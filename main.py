@@ -1,10 +1,12 @@
 from metric_extractor import MetricExtractor
 from video_processor import VideoProcessor
+from metric_analyzer import analyze_sessions
 import json
 import sys
 USER = "Logan"
-VIDEO_PATH = "media/hit5 - Trim.mp4"
+VIDEO_PATH = "media/hit5 - Trim"
 GENDER = "Male"
+#VIDEO DATE MUST BE IN MM DD YYYY
 VIDEO_DATE = "01-17-2025"
 try: 
     with open("data.json", "r") as json_file:
@@ -19,6 +21,7 @@ user_data = loaded_data[USER]
 try:
     video_processor = VideoProcessor(VIDEO_PATH, USER)
 except FileNotFoundError as e:
+    analyze_sessions(USER)
     print(e)
     sys.exit(0)
 
