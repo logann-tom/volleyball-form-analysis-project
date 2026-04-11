@@ -77,6 +77,7 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print(f"  Benchmarks — Junior: {benchmark_junior_onset_timing_ms} ms | Pro: {benchmark_pro_onset_timing_ms} ms")
             print(f"  {get_feedback(avg_onset_ms, benchmark_junior_onset_timing_ms, benchmark_pro_onset_timing_ms, higher_is_better=False)}\n")
 
+
             print(f"  Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
             print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 

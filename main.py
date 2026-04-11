@@ -2,12 +2,20 @@ from metric_extractor import MetricExtractor
 from video_processor import VideoProcessor
 from metric_analyzer import analyze_sessions
 import json
-import sys
-USER = "Logan"
-VIDEO_PATH = "media/hit5 - Trim"
-GENDER = "Male"
-#VIDEO DATE MUST BE IN MM DD YYYY
-VIDEO_DATE = "01-17-2025"
+USER = input("Enter your name: ")
+GENDER = input("Gender (Male/Female): ")
+while GENDER not in ["Male", "Female"]:
+    GENDER = input("Gender must be Male or Female: ")
+valid_video = False
+while not valid_video:
+    VIDEO_PATH = input("Enter video path (full path or relative to project root): ")
+    try:
+        video_processor = VideoProcessor(VIDEO_PATH, USER)
+        valid_video = True
+    except FileNotFoundError as e:
+        print(e)
+VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
+#get user data
 try: 
     with open("data.json", "r") as json_file:
         loaded_data = json.load(json_file)
@@ -18,12 +26,7 @@ except FileNotFoundError:
     loaded_data[USER] = {"sessions": []}
 user_data = loaded_data[USER]
 
-try:
-    video_processor = VideoProcessor(VIDEO_PATH, USER)
-except FileNotFoundError as e:
-    analyze_sessions(USER)
-    print(e)
-    sys.exit(0)
+
 
 video_processor.process()
 print(video_processor.get_fps())
@@ -76,9 +79,12 @@ if(video_processor.get_contact_frame() != -1):
             user_data["sessions"].append(session)
 
 
-
         with open("data.json", "w") as json_file:
             json.dump(loaded_data, json_file, indent=2)
+
+    analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
+    if analyze.lower() == 'y':
+        analyze_sessions(USER)
 else:
     print("You have to tag a contact frame with key c")
 
