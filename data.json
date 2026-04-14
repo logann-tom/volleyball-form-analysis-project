@@ -3,54 +3,59 @@
     "gender": "Male",
     "sessions": [
       {
-        "video": "media\\hit2 - Trim.mp4",
         "date": "01-17-2025",
-        "metrics": {
-          "peak_trunk_velocity": 465.2398117252686,
-          "peak_timing_ms_before_contact": 165.19096075062774,
-          "onset_ms_before_contact": 264.30553720100437,
-          "hip_shoulder_peak_diff_ms": 0.0
-        }
+        "videos": [
+          {
+            "video": "media\\hit2 - Trim.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 465.2398117252686,
+              "peak_timing_ms_before_contact": 165.19096075062774,
+              "onset_ms_before_contact": 264.30553720100437,
+              "hip_shoulder_peak_diff_ms": 0.0
+            }
+          },
+          {
+            "video": "media/hit1.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 400.17702469273263,
+              "peak_timing_ms_before_contact": 198.88888888888889,
+              "onset_ms_before_contact": 298.3333333333333,
+              "hip_shoulder_peak_diff_ms": 66.2962962962963
+            }
+          }
+        ]
       },
       {
-        "video": "media/hit1.mp4",
-        "date": "01-17-2025",
-        "metrics": {
-          "peak_trunk_velocity": 400.17702469273263,
-          "peak_timing_ms_before_contact": 198.88888888888889,
-          "onset_ms_before_contact": 298.3333333333333,
-          "hip_shoulder_peak_diff_ms": 66.2962962962963
-        }
-      },
-      {
-        "video": "media/hit3.mp4",
         "date": "04-04-2026",
-        "metrics": {
-          "peak_trunk_velocity": 387.15353318639194,
-          "peak_timing_ms_before_contact": 100.0,
-          "onset_ms_before_contact": 400.0,
-          "hip_shoulder_peak_diff_ms": 0.0
-        }
-      },
-      {
-        "video": "media/hit4.mp4",
-        "date": "04-04-2026",
-        "metrics": {
-          "peak_trunk_velocity": 162.38313517195638,
-          "peak_timing_ms_before_contact": 180.8614232209738,
-          "onset_ms_before_contact": 279.5131086142322,
-          "hip_shoulder_peak_diff_ms": 0.0
-        }
-      },
-      {
-        "video": "media/hit5 - Trim.mp4",
-        "date": "04-04-2026",
-        "metrics": {
-          "peak_trunk_velocity": 371.4302221501738,
-          "peak_timing_ms_before_contact": 164.4586811837148,
-          "onset_ms_before_contact": 213.79628553882924,
-          "hip_shoulder_peak_diff_ms": 0.0
-        }
+        "videos": [
+          {
+            "video": "media/hit3.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 387.15353318639194,
+              "peak_timing_ms_before_contact": 100.0,
+              "onset_ms_before_contact": 400.0,
+              "hip_shoulder_peak_diff_ms": 0.0
+            }
+          },
+          {
+            "video": "media/hit4.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 162.38313517195638,
+              "peak_timing_ms_before_contact": 180.8614232209738,
+              "onset_ms_before_contact": 279.5131086142322,
+              "hip_shoulder_peak_diff_ms": 0.0
+            }
+          },
+          {
+            "video": "media/hit5 - Trim.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 371.4302221501738,
+              "peak_timing_ms_before_contact": 164.4586811837148,
+              "onset_ms_before_contact": 213.79628553882924,
+              "hip_shoulder_peak_diff_ms": 0.0
+            }
+          }
+        ]
       }
     ]
   }

@@ -33,13 +33,14 @@ def analyze_sessions(user):
             #sort sessions by date
             sessions.sort(key = lambda s: datetime.datetime.strptime(s["date"],"%m-%d-%Y"))
             for session in sessions:
-                metrics = session["metrics"]
-                peak_trunk_velos.append(metrics["peak_trunk_velocity"])
-                peak_before_contacts.append(metrics["peak_timing_ms_before_contact"])
-                onset_times.append(metrics["onset_ms_before_contact"])
-                hip_shoulder_sep_times.append(metrics["hip_shoulder_peak_diff_ms"])
-
-            avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / len(sessions)
+                #average values across day and append 
+                date = session["date"]
+                for video in session["videos"]:
+                    metrics = video["metrics"]
+                    peak_trunk_velos.append((date, metrics["peak_trunk_velocity"]))
+                    peak_before_contacts.append((date, metrics["peak_timing_ms_before_contact"]))
+                    onset_times.append((date, metrics["onset_ms_before_contact"]))
+                    hip_shoulder_sep_times.append((date, metrics["hip_shoulder_peak_diff_ms"]))
             #output results
             output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, user, gender)
             
@@ -47,12 +48,17 @@ def analyze_sessions(user):
     except FileNotFoundError:
         print("please make sure you have a data.json in this directory")
 def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, user, gender):
+            dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+            dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
+            dates, onset_times = zip(*onset_times) if onset_times else ([],[])
+            dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
+
             #calc users averages
-            valid_sessions = len(peak_trunk_velos)
-            avg_peak_trunk_velo = sum(peak_trunk_velos) / valid_sessions
-            avg_peak_timing_ms = sum(peak_before_contacts) / valid_sessions
-            avg_onset_ms = sum(onset_times) / valid_sessions
-            avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / valid_sessions
+            num_vids = len(peak_trunk_velos)
+            avg_peak_trunk_velo = sum(peak_trunk_velos) / num_vids
+            avg_peak_timing_ms = sum(peak_before_contacts) / num_vids
+            avg_onset_ms = sum(onset_times) / num_vids
+            avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / num_vids
 
 
             #get benchmarks
@@ -63,7 +69,7 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             benchmark_pro_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["pro"]
             #print
             print(f"==== Performance Analysis for {user} ====")
-            print(f"Valid sessions analyzed: {valid_sessions}\n")
+            print(f"Valid sessions analyzed: {num_vids}\n")
 
             print(f"  Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
             print(f"  Benchmark: {benchmark_peak_trunk_velo} °/s")
@@ -82,13 +88,16 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 
             #get users trends over time using linear regression
+            date_objects = [datetime.datetime.strptime(d, "%m-%d-%Y") for d in dates]
+            first_date = date_objects[0]
+            days = [(d - first_date).days for d in date_objects]
             print(f"==== {user}\'s TRENDS =====")
-            trunk_velo_slope, trunk_velo_intercept = np.polyfit(range(valid_sessions), peak_trunk_velos, deg=1)
-            print(f"  Trunk Velocity Trend: {trunk_velo_slope:+.1f} °/s per session")
-            peak_timing_trend, peak_timing_intercept = np.polyfit(range(valid_sessions), peak_before_contacts,deg=1)
-            print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per session")
-            onset_timing_trend, onset_timing_intercept  = np.polyfit(range(valid_sessions), onset_times,deg=1)
-            print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per session")
+            trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
+            print(f"  Trunk Velocity Trend: {trunk_velo_slope:+.1f} °/s per day")
+            peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
+            print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per day")
+            onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
+            print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per day")
             #FOR FUTURE CAN GRAPH W MATPLOTLIB
 
             

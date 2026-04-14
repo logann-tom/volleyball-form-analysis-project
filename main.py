@@ -2,17 +2,20 @@ from metric_extractor import MetricExtractor
 from video_processor import VideoProcessor
 from metric_analyzer import analyze_sessions
 import json
+import datetime
 USER = input("Enter your name: ")
-#get user data
 new = False
+#check if user is in data 
 try: 
     with open("data.json", "r") as json_file:
         loaded_data = json.load(json_file)
+        #if user not in data get gender
         if(USER not in loaded_data):
             new = True
             GENDER = input("Gender (Male/Female): ")
             while GENDER not in ["Male", "Female"]:
                 GENDER = input("Gender must be Male or Female: ")
+#if no saved data file yet create data to save later
 except FileNotFoundError:
     loaded_data = {}
     new = True
@@ -22,7 +25,7 @@ if new:
     loaded_data[USER] = {"gender": GENDER, "sessions": []}
 GENDER = loaded_data[USER]["gender"]
 user_data = loaded_data[USER]
-
+#get video path and date
 valid_video = False
 while not valid_video:
     VIDEO_PATH = input("Enter video path (full path or relative to project root): ")
@@ -31,7 +34,14 @@ while not valid_video:
         valid_video = True
     except FileNotFoundError as e:
         print(e)
-VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
+valid_date = False
+while not valid_date: 
+    VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
+    try: 
+        datetime.datetime.strptime(VIDEO_DATE, "%m-%d-%Y")
+        valid_date = True
+    except ValueError:
+        valid_date = False
 
 
 done = False
@@ -48,7 +58,6 @@ while not done:
         #Store metrics to User
         session = {
             "video": VIDEO_PATH,
-            "date": VIDEO_DATE,
             "metrics": {
                 "peak_trunk_velocity": max_shoulder_velocity,
                 "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
@@ -66,10 +75,10 @@ while not done:
         
         save = input("Save this session? (y/n)")
         if save.lower() == 'y':
-            existing = user_data["sessions"]
+            existing = user_data["sessions"][VIDEO_DATE]
             is_duplicate = False
             for i, s in enumerate(existing):
-                if s["video"] == VIDEO_PATH and s["date"] == VIDEO_DATE:
+                if s["video"] == VIDEO_PATH:
                     is_duplicate = True
                     metrics = existing[i]["metrics"]
                     print("Video has already been processed, previous metrics: ")
@@ -83,7 +92,7 @@ while not done:
                     break
 
             if not is_duplicate:
-                user_data["sessions"].append(session)
+                user_data["sessions"][VIDEO_DATE].append(session)
 
 
             with open("data.json", "w") as json_file:
