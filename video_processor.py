@@ -7,7 +7,7 @@ from metric_extractor import MetricExtractor
 import cv2
 from pathlib import Path
 
-SCALE = 1
+SCALE = .4
 debug = True
 padding = 5
 # 0 - nose

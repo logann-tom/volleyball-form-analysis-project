@@ -3,9 +3,26 @@ from video_processor import VideoProcessor
 from metric_analyzer import analyze_sessions
 import json
 USER = input("Enter your name: ")
-GENDER = input("Gender (Male/Female): ")
-while GENDER not in ["Male", "Female"]:
-    GENDER = input("Gender must be Male or Female: ")
+#get user data
+new = False
+try: 
+    with open("data.json", "r") as json_file:
+        loaded_data = json.load(json_file)
+        if(USER not in loaded_data):
+            new = True
+            GENDER = input("Gender (Male/Female): ")
+            while GENDER not in ["Male", "Female"]:
+                GENDER = input("Gender must be Male or Female: ")
+except FileNotFoundError:
+    loaded_data = {}
+    new = True
+    while GENDER not in ["Male", "Female"]:
+        GENDER = input("Gender must be Male or Female: ")
+if new:
+    loaded_data[USER] = {"gender": GENDER, "sessions": []}
+GENDER = loaded_data[USER]["gender"]
+user_data = loaded_data[USER]
+
 valid_video = False
 while not valid_video:
     VIDEO_PATH = input("Enter video path (full path or relative to project root): ")
@@ -15,16 +32,7 @@ while not valid_video:
     except FileNotFoundError as e:
         print(e)
 VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
-#get user data
-try: 
-    with open("data.json", "r") as json_file:
-        loaded_data = json.load(json_file)
-        if(USER not in loaded_data):
-            loaded_data[USER] = {"sessions": []}
-except FileNotFoundError:
-    loaded_data = {}
-    loaded_data[USER] = {"sessions": []}
-user_data = loaded_data[USER]
+
 
 
 
@@ -41,7 +49,6 @@ if(video_processor.get_contact_frame() != -1):
     session = {
         "video": VIDEO_PATH,
         "date": VIDEO_DATE,
-        "gender": GENDER,
         "metrics": {
             "peak_trunk_velocity": max_shoulder_velocity,
             "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,

@@ -25,6 +25,7 @@ def analyze_sessions(user):
                 print("The user has no sessions stored in data.json")
                 return
             sessions = loaded_data[user]["sessions"]
+            gender = loaded_data[user]["gender"]
             peak_trunk_velos = []
             peak_before_contacts = []
             onset_times = []
@@ -39,7 +40,6 @@ def analyze_sessions(user):
                 hip_shoulder_sep_times.append(metrics["hip_shoulder_peak_diff_ms"])
 
             avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / len(sessions)
-            gender = session["gender"]
             #output results
             output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, user, gender)
             
