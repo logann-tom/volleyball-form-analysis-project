@@ -34,66 +34,76 @@ while not valid_video:
 VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
 
 
+done = False
+while not done:
+    video_processor.process()
+    print(video_processor.get_fps())
+    #GRAPHING
+    if(video_processor.get_contact_frame() != -1):
 
+        extractor = MetricExtractor(video_processor.hitter, fps = video_processor.get_fps(), contact_frame= video_processor.get_contact_frame())
+        extractor.graph_velocities()
+        max_shoulder_velocity, peak_rotation_velocity_before_contact, shoulder_onset_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
 
-video_processor.process()
-print(video_processor.get_fps())
-#GRAPHING
-if(video_processor.get_contact_frame() != -1):
-
-    extractor = MetricExtractor(video_processor.hitter, fps = video_processor.get_fps(), contact_frame= video_processor.get_contact_frame())
-    extractor.graph_velocities()
-    max_shoulder_velocity, peak_rotation_velocity_before_contact, shoulder_onset_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
-
-    #Store metrics to User
-    session = {
-        "video": VIDEO_PATH,
-        "date": VIDEO_DATE,
-        "metrics": {
-            "peak_trunk_velocity": max_shoulder_velocity,
-            "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
-            "onset_ms_before_contact": shoulder_onset_before_contact,
-            "hip_shoulder_peak_diff_ms": hip_shoulder_max_diff
+        #Store metrics to User
+        session = {
+            "video": VIDEO_PATH,
+            "date": VIDEO_DATE,
+            "metrics": {
+                "peak_trunk_velocity": max_shoulder_velocity,
+                "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
+                "onset_ms_before_contact": shoulder_onset_before_contact,
+                "hip_shoulder_peak_diff_ms": hip_shoulder_max_diff
+            }
         }
-    }
-    print("\nExtracted Metrics:")
-    metrics = session["metrics"]
-    print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-    print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-    print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-    print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
-    
-    
-    save = input("Save this session? (y/n)")
-    if save.lower() == 'y':
-        existing = user_data["sessions"]
-        is_duplicate = False
-        for i, s in enumerate(existing):
-            if s["video"] == VIDEO_PATH and s["date"] == VIDEO_DATE:
-                is_duplicate = True
-                metrics = existing[i]["metrics"]
-                print("Video has already been processed, previous metrics: ")
-                print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-                print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-                print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-                print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
-                overwrite = input("\nOverwrite previous session? (y/n): ")
-                if overwrite.lower() == 'y':
-                    existing[i] = session  # overwrite with new metrics
-                break
+        print("\nExtracted Metrics:")
+        metrics = session["metrics"]
+        print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
+        print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
+        print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
+        print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+        
+        
+        save = input("Save this session? (y/n)")
+        if save.lower() == 'y':
+            existing = user_data["sessions"]
+            is_duplicate = False
+            for i, s in enumerate(existing):
+                if s["video"] == VIDEO_PATH and s["date"] == VIDEO_DATE:
+                    is_duplicate = True
+                    metrics = existing[i]["metrics"]
+                    print("Video has already been processed, previous metrics: ")
+                    print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
+                    print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
+                    print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
+                    print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+                    overwrite = input("\nOverwrite previous session? (y/n): ")
+                    if overwrite.lower() == 'y':
+                        existing[i] = session  # overwrite with new metrics
+                    break
 
-        if not is_duplicate:
-            user_data["sessions"].append(session)
+            if not is_duplicate:
+                user_data["sessions"].append(session)
 
 
-        with open("data.json", "w") as json_file:
-            json.dump(loaded_data, json_file, indent=2)
-
-    analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
-    if analyze.lower() == 'y':
-        analyze_sessions(USER)
-else:
-    print("You have to tag a contact frame with key c")
+            with open("data.json", "w") as json_file:
+                json.dump(loaded_data, json_file, indent=2)
+        else: 
+            redo = input("Redo? (y/n)")
+            if redo.lower() == 'y':
+                continue
+        analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
+        if analyze.lower() == 'y':
+            analyze_sessions(USER)
+        done = True
+    else:
+        print("You have to tag a contact frame with key c")
+        redo = input("Redo? (y/n)")
+        if redo.lower() == 'y':
+            done = False
+        else: 
+            done = True
+            
 
 
 
