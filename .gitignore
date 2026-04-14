@@ -2,3 +2,4 @@ media/*.mp4
 media/*.MOV
 __pycache__/
 data.json
+trends.png

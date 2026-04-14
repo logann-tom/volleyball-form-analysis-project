@@ -1,6 +1,7 @@
 import json 
 import datetime
 import numpy as np
+import matplotlib.pyplot as plt
 
 BENCHMARKS = {
     "Male": {
@@ -98,8 +99,36 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per day")
             onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
             print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per day")
-            #FOR FUTURE CAN GRAPH W MATPLOTLIB
+            
 
+            x_line = np.linspace(min(days), max(days), 100)
+
+            fig, axes = plt.subplots(3, 1, figsize=(10, 10))
+
+            axes[0].scatter(days, peak_trunk_velos, color='blue', label='Sessions')
+            axes[0].plot(x_line, trunk_velo_slope * x_line + trunk_velo_intercept, color='red', label='Trend')
+            axes[0].axhline(y=BENCHMARKS[gender]["peak_trunk_velocity"], color='green', linestyle='--', label='Benchmark')
+            axes[0].set_ylabel('Peak Trunk Velocity (°/s)')
+            axes[0].legend()
+
+            axes[1].scatter(days, peak_before_contacts, color='blue', label='Sessions')
+            axes[1].plot(x_line, peak_timing_trend * x_line + peak_timing_intercept, color='red', label='Trend')
+            axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
+            axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
+            axes[1].set_ylabel('Peak Timing (ms)')
+            axes[1].legend()
+
+            axes[2].scatter(days, onset_times, color='blue', label='Sessions')
+            axes[2].plot(x_line, onset_timing_trend * x_line + onset_timing_intercept, color='red', label='Trend')
+            axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
+            axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
+            axes[2].set_ylabel('Onset (ms)')
+            axes[2].set_xlabel('Days since first session')
+            axes[2].legend()
+
+            plt.tight_layout()
+            plt.savefig("trends.png")
+            plt.show()
             
 
 
