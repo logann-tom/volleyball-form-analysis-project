@@ -60,7 +60,7 @@ VIDEO_DATE = "MM-DD-YYYY"
 python main.py
 ```
 
-3. **Draw a bounding box** around the hitter in the first frame.
+3. **Draw a bounding box** around the hitter in the first frame and press enter.
 
 4. The video plays with the pose skeleton overlaid. Use these controls:
 
@@ -74,6 +74,7 @@ python main.py
 
 5. After tagging contact, metrics are computed and displayed. A velocity graph opens showing shoulder and hip rotation curves. Press `y` to save the session or `n` to discard.
 
+6. After metrics are saved or discarded, there is an option to analyze the users trends. press  `y` to view the users trends and `n` to quit. 
 ---
 
 ## Project Structure
@@ -99,24 +100,25 @@ Sessions are saved to `data.json` with the following structure:
 ```json
 {
   "Logan": {
+    "gender": "Male",
     "sessions": [
-      {
-        "video": "media/hit2 - Trim.mp4",
-        "date": "01-17-2025",
-        "gender": "Male",
-        "metrics": {
-          "peak_trunk_velocity": 465.24,
-          "peak_timing_ms_before_contact": 165.19,
-          "onset_ms_before_contact": 264.31,
-          "hip_shoulder_peak_diff_ms": 0.0
-        }
+      { "date": "01-17-2025",
+        "videos": {
+          "video": "media/hit2 - Trim.mp4",
+            "metrics": {
+              "peak_trunk_velocity": 465.24,
+              "peak_timing_ms_before_contact": 165.19,
+              "onset_ms_before_contact": 264.31,
+              "hip_shoulder_peak_diff_ms": 0.0
+            }
+          }
       }
     ]
   }
 }
 ```
 
-The same video/date combination will not be stored twice.
+The same video will not be stored twice.
 
 ---
 
