@@ -101,19 +101,16 @@ Sessions are saved to `data.json` with the following structure:
 {
   "Logan": {
     "gender": "Male",
-    "sessions": [
-      { "date": "01-17-2025",
-        "videos": {
-          "video": "media/hit2 - Trim.mp4",
-            "metrics": {
+    "sessions": {
+       "01-17-2025": {
+          "media/hit2 - Trim.mp4" : {
               "peak_trunk_velocity": 465.24,
               "peak_timing_ms_before_contact": 165.19,
               "onset_ms_before_contact": 264.31,
               "hip_shoulder_peak_diff_ms": 0.0
             }
-          }
-      }
-    ]
+        }
+    }
   }
 }
 ```
