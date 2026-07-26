@@ -3,3 +3,4 @@ media/*.MOV
 __pycache__/
 data.json
 trends.png
+./codescapes

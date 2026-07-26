@@ -72,20 +72,20 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print(f"==== Performance Analysis for {user} ====")
             print(f"Valid sessions analyzed: {num_vids}\n")
 
-            print(f"  Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
+            print(f"  Average Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
             print(f"  Benchmark: {benchmark_peak_trunk_velo} °/s")
             print(f"  {get_feedback(avg_peak_trunk_velo, benchmark_peak_trunk_velo, benchmark_peak_trunk_velo)}\n")
 
-            print(f"  Peak Timing Before Contact: {avg_peak_timing_ms:.1f} ms")
+            print(f"  Average Peak Timing Before Contact: {avg_peak_timing_ms:.1f} ms")
             print(f"  Benchmarks — Junior: {benchmark_junior_peak_timing_ms} ms | Pro: {benchmark_pro_peak_timing_ms} ms")
             print(f"  {get_feedback(avg_peak_timing_ms, benchmark_junior_peak_timing_ms, benchmark_pro_peak_timing_ms, higher_is_better=False)}\n")
 
-            print(f"  Onset Before Contact:     {avg_onset_ms:.1f} ms")
+            print(f"  Average Onset Before Contact:     {avg_onset_ms:.1f} ms")
             print(f"  Benchmarks — Junior: {benchmark_junior_onset_timing_ms} ms | Pro: {benchmark_pro_onset_timing_ms} ms")
             print(f"  {get_feedback(avg_onset_ms, benchmark_junior_onset_timing_ms, benchmark_pro_onset_timing_ms, higher_is_better=False)}\n")
 
 
-            print(f"  Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
+            print(f"  Average Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
             print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 
             #get users trends over time using linear regression

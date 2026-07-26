@@ -1,0 +1,118 @@
+{
+  "sourceFile": "player_data.py",
+  "parsedAt": "2026-07-25T22:35:38.238Z",
+  "classes": [
+    {
+      "Classname": "PlayerData",
+      "Methods": [
+        {
+          "name": "_get_dist",
+          "parameters": [
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown"
+          ],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "update",
+          "parameters": [
+            "unknown",
+            "unknown",
+            "unknown",
+            "unknown"
+          ],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "_get_rotation_angle",
+          "parameters": [
+            "unknown",
+            "unknown"
+          ],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "getAllMetrics",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": []
+        }
+      ],
+      "Loc": 54,
+      "Type": "class",
+      "Extends": null,
+      "Implements": [],
+      "Fields": [
+        {
+          "name": "MAX_SECONDS",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "frames",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "fps",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "max_shoulder_ratio",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "max_hip_ratio",
+          "type": "unknown",
+          "modifiers": []
+        }
+      ],
+      "Constructors": [
+        {
+          "parameters": [
+            {
+              "name": "fps",
+              "type": "unknown"
+            }
+          ],
+          "modifiers": []
+        }
+      ]
+    },
+    {
+      "Classname": "<player_data>",
+      "Methods": [
+        {
+          "name": "<module_code_1>",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": [
+            "comment"
+          ]
+        }
+      ],
+      "Loc": 61,
+      "Type": "module",
+      "Extends": null,
+      "Implements": [
+        "math",
+        "collections"
+      ],
+      "Fields": [
+        {
+          "name": "Point",
+          "type": "unknown",
+          "modifiers": []
+        }
+      ],
+      "Constructors": []
+    }
+  ]
+}

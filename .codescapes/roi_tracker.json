@@ -1,0 +1,55 @@
+{
+  "sourceFile": "roi_tracker.py",
+  "parsedAt": "2026-07-25T23:07:34.059Z",
+  "classes": [
+    {
+      "Classname": "ROITracker",
+      "Methods": [
+        {
+          "name": "update",
+          "parameters": [
+            "unknown",
+            "unknown",
+            "unknown"
+          ],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "get_velocity",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "predict_next",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": []
+        }
+      ],
+      "Loc": 27,
+      "Type": "class",
+      "Extends": null,
+      "Implements": [],
+      "Fields": [
+        {
+          "name": "center_history",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "history_len",
+          "type": "unknown",
+          "modifiers": []
+        }
+      ],
+      "Constructors": [
+        {
+          "parameters": [],
+          "modifiers": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,6 +1,7 @@
 from metric_extractor import MetricExtractor
 from video_processor import VideoProcessor
 from metric_analyzer import analyze_sessions
+from pathlib import Path
 import json
 import datetime
 USER = input("Enter your name: ")
@@ -13,7 +14,7 @@ try:
         if(USER not in loaded_data):
             new = True
             GENDER = input("Gender (Male/Female): ")
-            while GENDER not in ["Male", "Female"]:
+            while GENDER.lower() not in ["male", "female"]:
                 GENDER = input("Gender must be Male or Female: ")
 #if no saved data file yet create data to save later
 except FileNotFoundError:
@@ -28,13 +29,27 @@ user_data = loaded_data[USER]
 #get video path and date
 valid_video = False
 while not valid_video:
-    VIDEO_PATH = input("Enter video path (full path or relative to project root): ")
+    raw_path = input("Enter video path (full path or relative to project root): ")
+    VIDEO_PATH = Path(raw_path).as_posix()
     try:
         video_processor = VideoProcessor(VIDEO_PATH, USER)
         valid_video = True
     except FileNotFoundError as e:
         print(e)
 valid_date = False
+sessions = user_data["sessions"]
+for session in sessions:
+    for video_entry in session["videos"]:
+        
+        if video_entry["video"] == VIDEO_PATH:
+            re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
+            if re_enter_date.lower() == "n":
+                valid_date = True
+                break
+            else:
+                break
+
+
 while not valid_date: 
     VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
     try: 
@@ -46,6 +61,7 @@ while not valid_date:
 
 done = False
 while not done:
+    print("not done yet")
     video_processor.process()
     print(video_processor.get_fps())
     #GRAPHING
@@ -100,6 +116,7 @@ while not done:
         else: 
             redo = input("Redo? (y/n)")
             if redo.lower() == 'y':
+                video_processor.reset()
                 continue
         analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
         if analyze.lower() == 'y':

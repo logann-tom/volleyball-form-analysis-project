@@ -4,6 +4,7 @@ from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from player_data import PlayerData
 from metric_extractor import MetricExtractor
+from roi_tracker import ROITracker
 import cv2
 from pathlib import Path
 
@@ -69,6 +70,7 @@ class VideoProcessor:
         self.cap = cv2.VideoCapture(video_path)
         self.fps = self.cap.get(cv2.CAP_PROP_FPS)
         self.hitter = PlayerData(self.fps)
+        self.roi_tracker = ROITracker()
         self.contact_frame = -1
         
         
@@ -100,6 +102,7 @@ class VideoProcessor:
         rx, ry, rw, rh = [int (v/SCALE) for v in roi]
         roi_cx = rx + rw / 2
         roi_cy = ry + rh / 2
+        self.roi_tracker.update(0,roi_cx, roi_cy)
         max_drift = rw * .6
         box_h = rh + padding
         box_w = rw + padding
@@ -130,10 +133,17 @@ class VideoProcessor:
             elif key == ord('c'):
                 self.contact_frame = frame_num
                 print(f"Contact tagged at frame {frame_num}")
+            elif key == ord('r'):
+                #TODO make it close current window
+                self.reset()
+                cv2.destroyAllWindows()
+                self.process()
+                return
 
             if process_frame:
                 frame_num = frame_num + 1
                 h, w = frame.shape[:2]
+                roi_cx, roi_cy = self.roi_tracker.predict_next()
                 y_start = max(0, int(roi_cy - box_h/2))
                 y_end = min(h, int(roi_cy + box_h/2))
                 x_start = max(0, int(roi_cx - box_w/2))
@@ -175,6 +185,7 @@ class VideoProcessor:
                     if dist < max_drift:
                         roi_cx = new_cx
                         roi_cy = new_cy
+                        self.roi_tracker.update(frame_num=frame_num, cx = roi_cx, cy = roi_cy)
 
                     if debug:
                         cv2.circle(frame, (int(roi_cx), int(roi_cy)), 10, (255, 0, 0), -1)
@@ -191,3 +202,6 @@ class VideoProcessor:
         return self.contact_frame
     def get_fps(self):
         return self.fps
+    #reset video back to first frame
+    def reset(self):
+        self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)

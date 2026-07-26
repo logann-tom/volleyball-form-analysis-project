@@ -1,0 +1,119 @@
+{
+  "sourceFile": "metric_extractor.py",
+  "parsedAt": "2026-07-25T22:35:38.356Z",
+  "classes": [
+    {
+      "Classname": "MetricExtractor",
+      "Methods": [
+        {
+          "name": "graph_velocities",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "get_onset_frame",
+          "parameters": [
+            "unknown",
+            "unknown"
+          ],
+          "returnType": "None",
+          "modifiers": []
+        },
+        {
+          "name": "get_metrics",
+          "parameters": [],
+          "returnType": "None",
+          "modifiers": []
+        }
+      ],
+      "Loc": 66,
+      "Type": "class",
+      "Extends": null,
+      "Implements": [],
+      "Fields": [
+        {
+          "name": "hitter",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "fps",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "frames",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "shoulder_velocities_deg",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "hip_velocities_deg",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "contact_frame",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "window_start",
+          "type": "unknown",
+          "modifiers": []
+        },
+        {
+          "name": "window_end",
+          "type": "unknown",
+          "modifiers": []
+        }
+      ],
+      "Constructors": [
+        {
+          "parameters": [
+            {
+              "name": "hitter",
+              "type": "PlayerData"
+            },
+            {
+              "name": "fps",
+              "type": "unknown"
+            },
+            {
+              "name": "contact_frame",
+              "type": "unknown"
+            }
+          ],
+          "modifiers": []
+        }
+      ]
+    },
+    {
+      "Classname": "<metric_extractor>",
+      "Methods": [],
+      "Loc": 75,
+      "Type": "module",
+      "Extends": null,
+      "Implements": [
+        "player_data",
+        "numpy",
+        "math",
+        "scipy",
+        "matplotlib"
+      ],
+      "Fields": [
+        {
+          "name": "ANALYSIS_WINDOW",
+          "type": "unknown",
+          "modifiers": []
+        }
+      ],
+      "Constructors": []
+    }
+  ]
+}

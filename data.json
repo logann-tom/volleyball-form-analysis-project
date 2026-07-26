@@ -6,7 +6,7 @@
         "date": "01-17-2025",
         "videos": [
           {
-            "video": "media\\hit2 - Trim.mp4",
+            "video": "media/hit2 - Trim.mp4",
             "metrics": {
               "peak_trunk_velocity": 465.2398117252686,
               "peak_timing_ms_before_contact": 165.19096075062774,
