@@ -32,12 +32,10 @@ def analyze_sessions(user):
             onset_times = []
             hip_shoulder_sep_times = []
             #sort sessions by date
-            sessions.sort(key = lambda s: datetime.datetime.strptime(s["date"],"%m-%d-%Y"))
-            for session in sessions:
+            for date in sorted(sessions.keys()):
                 #average values across day and append 
-                date = session["date"]
-                for video in session["videos"]:
-                    metrics = video["metrics"]
+                videos = sessions[date]
+                for video_path, metrics in videos.items():
                     peak_trunk_velos.append((date, metrics["peak_trunk_velocity"]))
                     peak_before_contacts.append((date, metrics["peak_timing_ms_before_contact"]))
                     onset_times.append((date, metrics["onset_ms_before_contact"]))
@@ -89,7 +87,7 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 
             #get users trends over time using linear regression
-            date_objects = [datetime.datetime.strptime(d, "%m-%d-%Y") for d in dates]
+            date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
             first_date = date_objects[0]
             days = [(d - first_date).days for d in date_objects]
             print(f"==== {user}\'s TRENDS =====")

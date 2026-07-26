@@ -3,6 +3,6 @@ media/*.MOV
 __pycache__/
 data.json
 trends.png
-codescapes/*
+.codescapes/*
 pose_landmarker_heavy.task
 FinalPaper.pdf

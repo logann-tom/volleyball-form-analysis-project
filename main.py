@@ -20,10 +20,11 @@ try:
 except FileNotFoundError:
     loaded_data = {}
     new = True
+    GENDER = input("Gender (Male/Female): ")
     while GENDER not in ["Male", "Female"]:
         GENDER = input("Gender must be Male or Female: ")
 if new:
-    loaded_data[USER] = {"gender": GENDER, "sessions": []}
+    loaded_data[USER] = {"gender": GENDER, "sessions": {}}
 GENDER = loaded_data[USER]["gender"]
 user_data = loaded_data[USER]
 #get video path and date
@@ -36,15 +37,18 @@ while not valid_video:
         valid_video = True
     except FileNotFoundError as e:
         print(e)
+
+#check if video is already tracked under some
 valid_date = False
+VIDEO_DATE = None
+
 sessions = user_data["sessions"]
-for session in sessions:
-    for video_entry in session["videos"]:
-        
-        if video_entry["video"] == VIDEO_PATH:
+for date_key, video_entries in sessions.items():
+        if VIDEO_PATH in video_entries:
             re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
             if re_enter_date.lower() == "n":
                 valid_date = True
+                VIDEO_DATE = date_key
                 break
             else:
                 break
@@ -53,7 +57,7 @@ for session in sessions:
 while not valid_date: 
     VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
     try: 
-        datetime.datetime.strptime(VIDEO_DATE, "%m-%d-%Y")
+        datetime.datetime.strptime(VIDEO_DATE, "%Y-%m-%d")
         valid_date = True
     except ValueError:
         valid_date = False
@@ -72,43 +76,41 @@ while not done:
         max_shoulder_velocity, peak_rotation_velocity_before_contact, shoulder_onset_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
 
         #Store metrics to User
-        session = {
-            "video": VIDEO_PATH,
-            "metrics": {
+        new_metrics = {
                 "peak_trunk_velocity": max_shoulder_velocity,
                 "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
                 "onset_ms_before_contact": shoulder_onset_before_contact,
                 "hip_shoulder_peak_diff_ms": hip_shoulder_max_diff
             }
-        }
+        
         print("\nExtracted Metrics:")
-        metrics = session["metrics"]
-        print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-        print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-        print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-        print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+        print(f"  Peak trunk velocity: {new_metrics['peak_trunk_velocity']:.1f} °/s")
+        print(f"  Peak timing before contact: {new_metrics['peak_timing_ms_before_contact']:.1f} ms")
+        print(f"  Onset before contact: {new_metrics['onset_ms_before_contact']:.1f} ms")
+        print(f"  Hip-shoulder peak diff: {new_metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
         
         
         save = input("Save this session? (y/n)")
         if save.lower() == 'y':
-            existing = user_data["sessions"][VIDEO_DATE]
-            is_duplicate = False
-            for i, s in enumerate(existing):
-                if s["video"] == VIDEO_PATH:
-                    is_duplicate = True
-                    metrics = existing[i]["metrics"]
-                    print("Video has already been processed, previous metrics: ")
-                    print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-                    print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-                    print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-                    print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
-                    overwrite = input("\nOverwrite previous session? (y/n): ")
-                    if overwrite.lower() == 'y':
-                        existing[i] = session  # overwrite with new metrics
-                    break
 
-            if not is_duplicate:
-                user_data["sessions"][VIDEO_DATE].append(session)
+            # ensure this date exists in sessions
+            if VIDEO_DATE not in sessions:
+                sessions[VIDEO_DATE] = {}
+            current_date_videos = sessions[VIDEO_DATE]
+
+            is_duplicate = VIDEO_PATH in current_date_videos
+            if is_duplicate:
+                metrics = current_date_videos[VIDEO_PATH]
+                print("Video has already been processed, previous metrics: ")
+                print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
+                print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
+                print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
+                print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+                overwrite = input("\nOverwrite previous session? (y/n): ")
+                if overwrite.lower() == 'y':
+                    current_date_videos[VIDEO_PATH] = new_metrics  # overwrite with new metrics
+            else:
+                current_date_videos[VIDEO_PATH] = new_metrics
 
 
             with open("data.json", "w") as json_file:
