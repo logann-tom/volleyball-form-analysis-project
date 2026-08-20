@@ -1,6 +1,6 @@
-from metric_extractor import MetricExtractor
-from video_processor import VideoProcessor
-from metric_analyzer import analyze_sessions
+from video.metric_extractor import MetricExtractor
+from video.video_processor import VideoProcessor
+from analysis.metric_analyzer import analyze_sessions
 from pathlib import Path
 import json
 import datetime
