@@ -1,0 +1,18 @@
+# Volleyball Hitting Form Analysis — Python dependencies
+# Install with: pip install -r requirements.txt
+# Tested on Python 3.14.2 (requires Python 3.9+)
+
+# Video I/O, ROI selection, and skeleton overlay rendering (video_processor.py)
+opencv-python>=4.10,<5
+
+# Pose landmark detection with the heavy 33-landmark model (video_processor.py)
+mediapipe>=0.10.14,<0.11
+
+# Array math for landmark/angle computation (video_processor.py, metric_extractor.py, metric_analyzer.py)
+numpy>=2.0,<3
+
+# Savitzky-Golay filtering of rotation velocity curves (metric_extractor.py)
+scipy>=1.13,<2
+
+# Velocity graphs and trend plots (metric_extractor.py, metric_analyzer.py)
+matplotlib>=3.8,<4

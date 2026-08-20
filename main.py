@@ -4,136 +4,139 @@ from metric_analyzer import analyze_sessions
 from pathlib import Path
 import json
 import datetime
-USER = input("Enter your name: ")
-new = False
-#check if user is in data 
-try: 
-    with open("data.json", "r") as json_file:
-        loaded_data = json.load(json_file)
-        #if user not in data get gender
-        if(USER not in loaded_data):
-            new = True
-            GENDER = input("Gender (Male/Female): ")
-            while GENDER.lower() not in ["male", "female"]:
-                GENDER = input("Gender must be Male or Female: ")
-#if no saved data file yet create data to save later
-except FileNotFoundError:
-    loaded_data = {}
-    new = True
-    GENDER = input("Gender (Male/Female): ")
-    while GENDER not in ["Male", "Female"]:
-        GENDER = input("Gender must be Male or Female: ")
-if new:
-    loaded_data[USER] = {"gender": GENDER, "sessions": {}}
-GENDER = loaded_data[USER]["gender"]
-user_data = loaded_data[USER]
-#get video path and date
-valid_video = False
-while not valid_video:
-    raw_path = input("Enter video path (full path or relative to project root): ")
-    VIDEO_PATH = Path(raw_path).as_posix()
-    try:
-        video_processor = VideoProcessor(VIDEO_PATH, USER)
-        valid_video = True
-    except FileNotFoundError as e:
-        print(e)
-
-#check if video is already tracked under some
-valid_date = False
-VIDEO_DATE = None
-
-sessions = user_data["sessions"]
-for date_key, video_entries in sessions.items():
-        if VIDEO_PATH in video_entries:
-            re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
-            if re_enter_date.lower() == "n":
-                valid_date = True
-                VIDEO_DATE = date_key
-                break
-            else:
-                break
-
-
-while not valid_date: 
-    VIDEO_DATE = input("Enter video date (MM-DD-YYYY): ")
+def run():
+    USER = input("Enter your name: ")
+    new = False
+    #check if user is in data 
     try: 
-        datetime.datetime.strptime(VIDEO_DATE, "%Y-%m-%d")
-        valid_date = True
-    except ValueError:
-        valid_date = False
+        with open("data.json", "r") as json_file:
+            loaded_data = json.load(json_file)
+            #if user not in data get gender
+            if(USER not in loaded_data):
+                new = True
+                GENDER = input("Gender (Male/Female): ")
+                while GENDER.lower() not in ["male", "female"]:
+                    GENDER = input("Gender must be Male or Female: ")
+    #if no saved data file yet create data to save later
+    except FileNotFoundError:
+        loaded_data = {}
+        new = True
+        GENDER = input("Gender (Male/Female): ")
+        while GENDER not in ["Male", "Female"]:
+            GENDER = input("Gender must be Male or Female: ")
+    if new:
+        loaded_data[USER] = {"gender": GENDER, "sessions": {}}
+    GENDER = loaded_data[USER]["gender"]
+    user_data = loaded_data[USER]
+    #get video path and date
+    valid_video = False
+    while not valid_video:
+        raw_path = input("Enter video path (full path or relative to project root): ")
+        VIDEO_PATH = Path(raw_path).as_posix()
+        try:
+            video_processor = VideoProcessor(VIDEO_PATH, USER)
+            valid_video = True
+        except FileNotFoundError as e:
+            print(e)
+
+    #check if video is already tracked under some
+    valid_date = False
+    VIDEO_DATE = None
+
+    sessions = user_data["sessions"]
+    for date_key, video_entries in sessions.items():
+            if VIDEO_PATH in video_entries:
+                re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
+                if re_enter_date.lower() == "n":
+                    valid_date = True
+                    VIDEO_DATE = date_key
+                    break
+                else:
+                    break
 
 
-done = False
-while not done:
-    print("not done yet")
-    video_processor.process()
-    print(video_processor.get_fps())
-    #GRAPHING
-    if(video_processor.get_contact_frame() != -1):
+    while not valid_date: 
+        VIDEO_DATE = input("Enter video date (YYYY-MM-DD): ")
+        try: 
+            datetime.datetime.strptime(VIDEO_DATE, "%Y-%m-%d")
+            valid_date = True
+        except ValueError:
+            valid_date = False
 
-        extractor = MetricExtractor(video_processor.hitter, fps = video_processor.get_fps(), contact_frame= video_processor.get_contact_frame())
-        extractor.graph_velocities()
-        max_shoulder_velocity, peak_rotation_velocity_before_contact, shoulder_onset_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
 
-        #Store metrics to User
-        new_metrics = {
-                "peak_trunk_velocity": max_shoulder_velocity,
-                "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
-                "onset_ms_before_contact": shoulder_onset_before_contact,
-                "hip_shoulder_peak_diff_ms": hip_shoulder_max_diff
-            }
-        
-        print("\nExtracted Metrics:")
-        print(f"  Peak trunk velocity: {new_metrics['peak_trunk_velocity']:.1f} °/s")
-        print(f"  Peak timing before contact: {new_metrics['peak_timing_ms_before_contact']:.1f} ms")
-        print(f"  Onset before contact: {new_metrics['onset_ms_before_contact']:.1f} ms")
-        print(f"  Hip-shoulder peak diff: {new_metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
-        
-        
-        save = input("Save this session? (y/n)")
-        if save.lower() == 'y':
+    done = False
+    while not done:
+        video_processor.process()
+        print(video_processor.get_fps())
+        #GRAPHING
+        if(video_processor.get_contact_frame() != -1):
 
-            # ensure this date exists in sessions
-            if VIDEO_DATE not in sessions:
-                sessions[VIDEO_DATE] = {}
-            current_date_videos = sessions[VIDEO_DATE]
+            extractor = MetricExtractor(video_processor.hitter, fps = video_processor.get_fps(), contact_frame= video_processor.get_contact_frame())
+            extractor.graph_velocities()
+            max_shoulder_velocity, peak_rotation_velocity_before_contact, shoulder_onset_before_contact, hip_shoulder_max_diff = extractor.get_metrics()
 
-            is_duplicate = VIDEO_PATH in current_date_videos
-            if is_duplicate:
-                metrics = current_date_videos[VIDEO_PATH]
-                print("Video has already been processed, previous metrics: ")
-                print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-                print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-                print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-                print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
-                overwrite = input("\nOverwrite previous session? (y/n): ")
-                if overwrite.lower() == 'y':
-                    current_date_videos[VIDEO_PATH] = new_metrics  # overwrite with new metrics
+            #Store metrics to User
+            new_metrics = {
+                    "peak_trunk_velocity": max_shoulder_velocity,
+                    "peak_timing_ms_before_contact": peak_rotation_velocity_before_contact,
+                    "onset_ms_before_contact": shoulder_onset_before_contact,
+                    "hip_shoulder_peak_diff_ms": hip_shoulder_max_diff
+                }
+            
+            print("\nExtracted Metrics:")
+            print(f"  Peak trunk velocity: {new_metrics['peak_trunk_velocity']:.1f} °/s")
+            print(f"  Peak timing before contact: {new_metrics['peak_timing_ms_before_contact']:.1f} ms")
+            print(f"  Onset before contact: {new_metrics['onset_ms_before_contact']:.1f} ms")
+            print(f"  Hip-shoulder peak diff: {new_metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+            
+            
+            save = input("Save this session? (y/n)")
+            if save.lower() == 'y':
+
+                # ensure this date exists in sessions
+                if VIDEO_DATE not in sessions:
+                    sessions[VIDEO_DATE] = {}
+                current_date_videos = sessions[VIDEO_DATE]
+
+                is_duplicate = VIDEO_PATH in current_date_videos
+                if is_duplicate:
+                    metrics = current_date_videos[VIDEO_PATH]
+                    print("Video has already been processed, previous metrics: ")
+                    print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
+                    print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
+                    print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
+                    print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+                    overwrite = input("\nOverwrite previous session? (y/n): ")
+                    if overwrite.lower() == 'y':
+                        current_date_videos[VIDEO_PATH] = new_metrics  # overwrite with new metrics
+                else:
+                    current_date_videos[VIDEO_PATH] = new_metrics
+
+
+                with open("data.json", "w") as json_file:
+                    json.dump(loaded_data, json_file, indent=2)
             else:
-                current_date_videos[VIDEO_PATH] = new_metrics
-
-
-            with open("data.json", "w") as json_file:
-                json.dump(loaded_data, json_file, indent=2)
-        else: 
+                redo = input("Redo? (y/n)")
+                if redo.lower() == 'y':
+                    extractor.close_graph()
+                    video_processor.reset()
+                    continue
+            extractor.close_graph()
+            analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
+            if analyze.lower() == 'y':
+                analyze_sessions(USER)
+            done = True
+        else:
+            print("You have to tag a contact frame with key c")
             redo = input("Redo? (y/n)")
             if redo.lower() == 'y':
-                video_processor.reset()
-                continue
-        analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
-        if analyze.lower() == 'y':
-            analyze_sessions(USER)
-        done = True
-    else:
-        print("You have to tag a contact frame with key c")
-        redo = input("Redo? (y/n)")
-        if redo.lower() == 'y':
-            done = False
-        else: 
-            done = True
-            
+                done = False
+            else: 
+                done = True
+                
 
 
 
 
-    
+if __name__ == '__main__':
+    run()

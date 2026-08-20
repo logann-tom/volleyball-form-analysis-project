@@ -134,10 +134,7 @@ class VideoProcessor:
                 self.contact_frame = frame_num
                 print(f"Contact tagged at frame {frame_num}")
             elif key == ord('r'):
-                #TODO make it close current window
                 self.reset()
-                cv2.destroyAllWindows()
-                self.process()
                 return
 
             if process_frame:
@@ -205,3 +202,5 @@ class VideoProcessor:
     #reset video back to first frame
     def reset(self):
         self.cap.set(cv2.CAP_PROP_POS_FRAMES, 0)
+        cv2.destroyAllWindows()
+        self.process()

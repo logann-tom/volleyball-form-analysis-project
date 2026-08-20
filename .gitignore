@@ -6,3 +6,6 @@ trends.png
 .codescapes/*
 pose_landmarker_heavy.task
 FinalPaper.pdf
+.venv/
+.claude
+CLAUDE.md

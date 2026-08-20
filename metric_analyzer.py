@@ -2,6 +2,7 @@ import json
 import datetime
 import numpy as np
 import matplotlib.pyplot as plt
+from plot_utils import close_figure
 
 BENCHMARKS = {
     "Male": {
@@ -124,9 +125,10 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             axes[2].set_xlabel('Days since first session')
             axes[2].legend()
 
-            plt.tight_layout()
-            plt.savefig("trends.png")
+            fig.tight_layout()
+            fig.savefig("trends.png")
             plt.show()
+            close_figure(fig)
             
 
 

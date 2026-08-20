@@ -3,6 +3,7 @@ import numpy as np
 import math
 from scipy.signal import savgol_filter
 import matplotlib.pyplot as plt
+from plot_utils import show_nonblocking, close_figure
 
 
 ANALYSIS_WINDOW = [.4, .08]
@@ -25,21 +26,27 @@ class MetricExtractor:
 
         self.window_start = math.floor(contact_frame - ANALYSIS_WINDOW[0] * fps)
         self.window_end = math.ceil(contact_frame + ANALYSIS_WINDOW[1] * fps)
+        self.fig = None
 
     def graph_velocities(self):
 
         plot_start = self.window_start
         plot_end = self.window_end
 
-        plt.figure()
-        plt.plot(self.frames[plot_start:plot_end],self.shoulder_velocities_deg[plot_start:plot_end], label="Shoulder Velocity", color="red")
-        plt.plot(self.frames[plot_start:plot_end], self.hip_velocities_deg[plot_start:plot_end], label="Hip Velocity", color="blue")
-        plt.axvline(self.contact_frame)
-        plt.xlabel("frames")
-        plt.legend()
-        plt.show(block = False)
+        self.close_graph()
+        self.fig, ax = plt.subplots()
+        ax.plot(self.frames[plot_start:plot_end],self.shoulder_velocities_deg[plot_start:plot_end], label="Shoulder Velocity", color="red")
+        ax.plot(self.frames[plot_start:plot_end], self.hip_velocities_deg[plot_start:plot_end], label="Hip Velocity", color="blue")
+        ax.axvline(self.contact_frame)
+        ax.set_xlabel("frames")
+        ax.legend()
+        show_nonblocking()
 
-        
+    def close_graph(self):
+        close_figure(self.fig)
+        self.fig = None
+
+
     def get_onset_frame(self, velocities, min_consecutive=3):
         for i in range(len(velocities)):
             if all(velocities[i:i+min_consecutive] > 0):
