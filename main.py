@@ -1,34 +1,23 @@
 from video.metric_extractor import MetricExtractor
 from video.video_processor import VideoProcessor
 from analysis.metric_analyzer import analyze_sessions
+from db.db import get_connection
 from pathlib import Path
 import json
+import db.data_store as data_store
 import datetime
 def run():
+    conn = get_connection()
     USER = input("Enter your name: ")
-    new = False
+    new = data_store.get_player(USER, conn) is None
     #check if user is in data 
-    try: 
-        with open("data.json", "r") as json_file:
-            loaded_data = json.load(json_file)
-            #if user not in data get gender
-            if(USER not in loaded_data):
-                new = True
-                GENDER = input("Gender (Male/Female): ")
-                while GENDER.lower() not in ["male", "female"]:
-                    GENDER = input("Gender must be Male or Female: ")
-    #if no saved data file yet create data to save later
-    except FileNotFoundError:
-        loaded_data = {}
-        new = True
-        GENDER = input("Gender (Male/Female): ")
-        while GENDER not in ["Male", "Female"]:
-            GENDER = input("Gender must be Male or Female: ")
     if new:
-        loaded_data[USER] = {"gender": GENDER, "sessions": {}}
-    GENDER = loaded_data[USER]["gender"]
-    user_data = loaded_data[USER]
-    #get video path and date
+        GENDER = input("Gender (Male/Female): ")
+        while GENDER.lower() not in ["male", "female"]:
+            GENDER = input("Gender must be Male or Female: ") 
+        data_store.add_player(USER, GENDER, conn)
+    
+    #get video path
     valid_video = False
     while not valid_video:
         raw_path = input("Enter video path (full path or relative to project root): ")
@@ -38,23 +27,19 @@ def run():
             valid_video = True
         except FileNotFoundError as e:
             print(e)
-
-    #check if video is already tracked under some
+    #check if video exists under the user, if yes ask if date change is wanted, if no ask for date
     valid_date = False
     VIDEO_DATE = None
-
-    sessions = user_data["sessions"]
-    for date_key, video_entries in sessions.items():
-            if VIDEO_PATH in video_entries:
-                re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
-                if re_enter_date.lower() == "n":
-                    valid_date = True
-                    VIDEO_DATE = date_key
-                    break
-                else:
-                    break
-
-
+    date_change = False
+    video = data_store.get_video(USER, VIDEO_PATH, conn)
+    if video is not None:
+        re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
+        if re_enter_date.lower() == "n":
+            valid_date = True
+            VIDEO_DATE = video["date"]
+        else:
+            date_change = True
+                 
     while not valid_date: 
         VIDEO_DATE = input("Enter video date (YYYY-MM-DD): ")
         try: 
@@ -92,29 +77,28 @@ def run():
             
             save = input("Save this session? (y/n)")
             if save.lower() == 'y':
-
-                # ensure this date exists in sessions
-                if VIDEO_DATE not in sessions:
-                    sessions[VIDEO_DATE] = {}
-                current_date_videos = sessions[VIDEO_DATE]
-
-                is_duplicate = VIDEO_PATH in current_date_videos
+                is_duplicate = video is not None
                 if is_duplicate:
-                    metrics = current_date_videos[VIDEO_PATH]
                     print("Video has already been processed, previous metrics: ")
-                    print(f"  Peak trunk velocity: {metrics['peak_trunk_velocity']:.1f} °/s")
-                    print(f"  Peak timing before contact: {metrics['peak_timing_ms_before_contact']:.1f} ms")
-                    print(f"  Onset before contact: {metrics['onset_ms_before_contact']:.1f} ms")
-                    print(f"  Hip-shoulder peak diff: {metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
+                    print(f"  Peak trunk velocity: {video['peak_trunk_velocity']:.1f} °/s")
+                    print(f"  Peak timing before contact: {video['peak_timing_ms_before_contact']:.1f} ms")
+                    print(f"  Onset before contact: {video['onset_ms_before_contact']:.1f} ms")
+                    print(f"  Hip-shoulder peak diff: {video['hip_shoulder_peak_diff_ms']:.1f} ms")
                     overwrite = input("\nOverwrite previous session? (y/n): ")
                     if overwrite.lower() == 'y':
-                        current_date_videos[VIDEO_PATH] = new_metrics  # overwrite with new metrics
+                        data_store.update_video_metrics(USER, VIDEO_PATH, conn, new_metrics['peak_trunk_velocity'], 
+                                                        new_metrics['peak_timing_ms_before_contact'],
+                                                        new_metrics['onset_ms_before_contact'],
+                                                        new_metrics['hip_shoulder_peak_diff_ms']
+                                                        ) # overwrite with new metrics
+                        if date_change:
+                            data_store.update_video_date(USER, VIDEO_PATH, conn, VIDEO_DATE)
                 else:
-                    current_date_videos[VIDEO_PATH] = new_metrics
-
-
-                with open("data.json", "w") as json_file:
-                    json.dump(loaded_data, json_file, indent=2)
+                    data_store.add_video(USER, VIDEO_PATH, conn, VIDEO_DATE, new_metrics['peak_trunk_velocity'], 
+                                                        new_metrics['peak_timing_ms_before_contact'],
+                                                        new_metrics['onset_ms_before_contact'],
+                                                        new_metrics['hip_shoulder_peak_diff_ms'],
+                                                        )
             else:
                 redo = input("Redo? (y/n)")
                 if redo.lower() == 'y':

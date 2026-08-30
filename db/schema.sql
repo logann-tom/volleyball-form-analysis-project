@@ -1,7 +1,7 @@
 CREATE TABLE IF NOT EXISTS users(
     id INTEGER PRIMARY KEY AUTOINCREMENT, 
     name TEXT NOT NULL,
-    gender TEXT NOT NULL CHECK (gender in ('Male', 'Female'))
+    gender TEXT NOT NULL CHECK (gender in ('male', 'female'))
 );
 
 

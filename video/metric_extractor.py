@@ -69,6 +69,7 @@ class MetricExtractor:
         peak_rotation_velocity_before_contact = delta_shoulder / self.fps * 1000
         
         #get when trunk(shoulder starts rotating)
+        #TODO can this really be None?
         shoulder_onset_frame = self.get_onset_frame(windowed_shoulder)
         if shoulder_onset_frame is None:
             shoulder_onset_before_contact = None
