@@ -24,7 +24,7 @@ BENCHMARKS = {
 
 def analyze_sessions(name, conn : sqlite3.Connection = None):
     if conn is None:
-         conn = get_connection
+         conn = get_connection()
     player = data_store.get_player(name, conn)
     if player is None: 
         print("The user has no sessions stored")
@@ -88,7 +88,7 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
             first_date = date_objects[0]
             days = [(d - first_date).days for d in date_objects]
-            print(f"==== {user}\'s TRENDS =====")
+            print(f"==== {name}\'s TRENDS =====")
             trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
             print(f"  Trunk Velocity Trend: {trunk_velo_slope:+.1f} °/s per day")
             peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)

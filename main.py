@@ -108,15 +108,17 @@ def run():
             extractor.close_graph()
             analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
             if analyze.lower() == 'y':
-                analyze_sessions(USER)
+                analyze_sessions(USER, conn)
             done = True
         else:
             print("You have to tag a contact frame with key c")
             redo = input("Redo? (y/n)")
             if redo.lower() == 'y':
-                done = False
+                video_processor.reset()
+                continue
             else: 
                 done = True
+    conn.close()
                 
 
 
