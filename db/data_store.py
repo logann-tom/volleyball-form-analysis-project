@@ -33,6 +33,12 @@ def get_video(name, video_path, conn : sqlite3.Connection):
         return None
     return vid
 
+def get_all_videos(name, conn : sqlite3.Connection):
+    cursor = conn.cursor()
+    player_id = get_player(name, conn)["id"]
+    vids = cursor.execute('SELECT * FROM videos where user_id = ?', (player_id,)).fetchall()
+    return vids
+
 
 def update_video_date(name, video_path, conn : sqlite3.Connection, date):
     cursor = conn.cursor()

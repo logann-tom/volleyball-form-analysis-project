@@ -1,17 +1,20 @@
-import json 
 import datetime
+import sqlite3
 import numpy as np
 import matplotlib.pyplot as plt
+import db.data_store as data_store
 from analysis.plot_utils import close_figure
+from db.db import get_connection
+
 
 BENCHMARKS = {
-    "Male": {
+    "male": {
         'peak_trunk_velocity': 400,
         'onset_ms_before_contact': {"pro" : 220, "junior": 180}, #220 for pro, 180 for reg
         'peak_timing_ms_before_contact': {"pro": 60, "junior": 80} #peak velocity ms before contact pro 60ms before contact, teens 80ms
 
     },
-    'Female': {
+    'female': {
         'peak_trunk_velocity': 300,
         'onset_ms_before_contact': {"pro" : 220, "junior": 180}, #220 for pro, 180 for reg
         'peak_timing_ms_before_contact': {"pro": 50, "junior": 80} #peak velocity ms before contact pro 50ms before contact, teens 80ms
@@ -19,35 +22,29 @@ BENCHMARKS = {
 }
 
 
-def analyze_sessions(user):
-    try: 
-        with open("data.json", "r") as json_file:
-            loaded_data = json.load(json_file)
-            if(user not in loaded_data):
-                print("The user has no sessions stored in data.json")
-                return
-            sessions = loaded_data[user]["sessions"]
-            gender = loaded_data[user]["gender"]
-            peak_trunk_velos = []
-            peak_before_contacts = []
-            onset_times = []
-            hip_shoulder_sep_times = []
-            #sort sessions by date
-            for date in sorted(sessions.keys()):
-                #average values across day and append 
-                videos = sessions[date]
-                for video_path, metrics in videos.items():
-                    peak_trunk_velos.append((date, metrics["peak_trunk_velocity"]))
-                    peak_before_contacts.append((date, metrics["peak_timing_ms_before_contact"]))
-                    onset_times.append((date, metrics["onset_ms_before_contact"]))
-                    hip_shoulder_sep_times.append((date, metrics["hip_shoulder_peak_diff_ms"]))
-            #output results
-            output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, user, gender)
+def analyze_sessions(name, conn : sqlite3.Connection = None):
+    if conn is None:
+         conn = get_connection
+    player = data_store.get_player(name, conn)
+    if player is None: 
+        print("The user has no sessions stored")
+        return
+    gender = player['gender']
+    peak_trunk_velos = []
+    peak_before_contacts = []
+    onset_times = []
+    hip_shoulder_sep_times = []
+    videos = data_store.get_all_videos(name, conn)
+    for video in sorted(videos, key = lambda vid : vid['date']):
+        peak_trunk_velos.append((video['date'], video["peak_trunk_velocity"]))
+        peak_before_contacts.append((video['date'], video["peak_timing_ms_before_contact"]))
+        onset_times.append((video['date'], video["onset_ms_before_contact"]))
+        hip_shoulder_sep_times.append((video['date'], video["hip_shoulder_peak_diff_ms"]))
+        
+    output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, name, gender)
             
             
-    except FileNotFoundError:
-        print("please make sure you have a data.json in this directory")
-def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, user, gender):
+def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, name, gender):
             dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
             dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
             dates, onset_times = zip(*onset_times) if onset_times else ([],[])
@@ -68,7 +65,7 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             benchmark_junior_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["junior"]
             benchmark_pro_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["pro"]
             #print
-            print(f"==== Performance Analysis for {user} ====")
+            print(f"==== Performance Analysis for {name} ====")
             print(f"Valid sessions analyzed: {num_vids}\n")
 
             print(f"  Average Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
