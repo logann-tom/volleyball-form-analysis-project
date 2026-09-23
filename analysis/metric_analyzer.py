@@ -22,7 +22,17 @@ BENCHMARKS = {
 }
 
 
-def analyze_sessions(name, conn : sqlite3.Connection = None):
+def analyze_sessions(name, conn :sqlite3.Connection = None):
+    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
+    avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
+    num_vids = len(peak_trunk_velos)
+    gender = data_store.get_player(name,conn)['gender']
+    output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids)
+    dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+    show_trends(peak_trunk_velos, peak_before_contacts, onset_times, dates, name, gender)
+
+    
+def get_aggregate_metrics(name, conn : sqlite3.Connection = None):
     if conn is None:
          conn = get_connection()
     player = data_store.get_player(name, conn)
@@ -40,24 +50,45 @@ def analyze_sessions(name, conn : sqlite3.Connection = None):
         peak_before_contacts.append((video['date'], video["peak_timing_ms_before_contact"]))
         onset_times.append((video['date'], video["onset_ms_before_contact"]))
         hip_shoulder_sep_times.append((video['date'], video["hip_shoulder_peak_diff_ms"]))
-        
-    output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, name, gender)
-            
-            
-def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoulder_sep_times, name, gender):
+
+    return peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times
+
+def get_trends(name, conn):
+            peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
             dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
-            dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
-            dates, onset_times = zip(*onset_times) if onset_times else ([],[])
-            dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
+            #get users trends over time using linear regression
+            date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
+            first_date = date_objects[0]
+            days = [(d - first_date).days for d in date_objects]
+            print(f"==== {name}\'s TRENDS =====")
+            trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
+            peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
+            onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
+            hip_sep_trend, hip_sep_intercept = np.polyfit(days, hip_shoulder_sep_times, deg=1)
+            return trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend
 
-            #calc users averages
-            num_vids = len(peak_trunk_velos)
-            avg_peak_trunk_velo = sum(peak_trunk_velos) / num_vids
-            avg_peak_timing_ms = sum(peak_before_contacts) / num_vids
-            avg_onset_ms = sum(onset_times) / num_vids
-            avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / num_vids
+def get_averages(name, conn):
+    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
+    return calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
 
+def calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times):
+    dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+    dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
+    dates, onset_times = zip(*onset_times) if onset_times else ([],[])
+    dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
 
+    #calc users averages
+    num_vids = len(peak_trunk_velos)
+    avg_peak_trunk_velo = sum(peak_trunk_velos) / num_vids
+    avg_peak_timing_ms = sum(peak_before_contacts) / num_vids
+    avg_onset_ms = sum(onset_times) / num_vids
+    avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / num_vids
+
+    return avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif
+
+       
+def output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids):
+            
             #get benchmarks
             benchmark_peak_trunk_velo = BENCHMARKS[gender]["peak_trunk_velocity"]
             benchmark_junior_peak_timing_ms = BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"]
@@ -84,7 +115,10 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print(f"  Average Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
             print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 
-            #get users trends over time using linear regression
+
+
+
+def show_trends(peak_trunk_velos, peak_before_contacts, onset_times, dates, name, gender):
             date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
             first_date = date_objects[0]
             days = [(d - first_date).days for d in date_objects]
@@ -95,7 +129,6 @@ def output_results(peak_trunk_velos, peak_before_contacts, onset_times,hip_shoul
             print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per day")
             onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
             print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per day")
-            
 
             x_line = np.linspace(min(days), max(days), 100)
 

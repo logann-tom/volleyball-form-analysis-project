@@ -16,3 +16,5 @@ scipy>=1.13,<2
 
 # Velocity graphs and trend plots (metric_extractor.py, metric_analyzer.py)
 matplotlib>=3.8,<4
+
+fastapi
