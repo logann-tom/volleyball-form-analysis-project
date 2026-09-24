@@ -23,7 +23,7 @@ def get_player_hist(name, conn : sqlite3.Connection = Depends(get_db)):
     if vids is None:
         raise HTTPException(status_code=404, detail="Player not found")
     else:
-        return dict(vids)
+        return vids
 
 @app.get('/player_vids/{name}/{vid_path}')
 def get_video(name, vid_path, conn : sqlite3.Connection = Depends(get_db)):
@@ -33,8 +33,10 @@ def get_video(name, vid_path, conn : sqlite3.Connection = Depends(get_db)):
     return dict(vid_data)
 
 @app.get('/player/trends/{name}')
-def get_trends(name, conn : sqlite3.Connection):
+def get_metrics(name, conn : sqlite3.Connection = Depends(get_db)):
     avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = get_averages(name, conn)
     trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend = get_trends(name, conn)
+    return (avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif,
+              trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend)
 
     

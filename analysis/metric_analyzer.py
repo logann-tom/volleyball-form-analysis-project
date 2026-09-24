@@ -21,7 +21,8 @@ BENCHMARKS = {
     }
 }
 
-
+class MissingUserError(Exception):
+    """Raised when trying to access player that does not exist"""
 def analyze_sessions(name, conn :sqlite3.Connection = None):
     peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
     avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
@@ -37,9 +38,7 @@ def get_aggregate_metrics(name, conn : sqlite3.Connection = None):
          conn = get_connection()
     player = data_store.get_player(name, conn)
     if player is None: 
-        print("The user has no sessions stored")
-        return
-    gender = player['gender']
+        raise MissingUserError("Player does not exist, Cannot get metrics")
     peak_trunk_velos = []
     peak_before_contacts = []
     onset_times = []
