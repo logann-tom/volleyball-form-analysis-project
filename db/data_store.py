@@ -1,4 +1,5 @@
 import sqlite3
+from exceptions.exceptions import MissingVideoError, DuplicateVideoError, MissingUserError
 def get_player(name, conn : sqlite3.Connection):
     cursor = conn.cursor()
     player = cursor.execute('SELECT * FROM users WHERE name = ?', (name,)).fetchone()
@@ -14,15 +15,6 @@ def add_player(name, gender, conn : sqlite3.Connection):
     cursor.execute('INSERT into users (name, gender) VALUES (?, ?)', (name, gender))
     conn.commit()
 
-class DuplicateVideoError(Exception):
-    """Raised when an existing video is added to a user again"""
-    
-
-class MissingVideoError(Exception):
-    """Raised when trying to update (not access) a missing video"""
-
-class MissingUserError(Exception):
-    """Raised when trying to add video to a missing player"""
 def add_video(name, video_path, conn : sqlite3.Connection, date, trunk_velo, timing_before, onset, hip_sep, ):
     cursor = conn.cursor()
     if(get_video(name, video_path, conn) is not None):

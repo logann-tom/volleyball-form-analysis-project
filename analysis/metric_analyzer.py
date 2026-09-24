@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import db.data_store as data_store
 from analysis.plot_utils import close_figure
 from db.db import get_connection
+from exceptions.exceptions import MissingUserError
 
 
 BENCHMARKS = {
@@ -21,16 +22,13 @@ BENCHMARKS = {
     }
 }
 
-class MissingUserError(Exception):
-    """Raised when trying to access player that does not exist"""
 def analyze_sessions(name, conn :sqlite3.Connection = None):
     peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
     avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
     num_vids = len(peak_trunk_velos)
     gender = data_store.get_player(name,conn)['gender']
     output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids)
-    dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
-    show_trends(peak_trunk_velos, peak_before_contacts, onset_times, dates, name, gender)
+    show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gender)
 
     
 def get_aggregate_metrics(name, conn : sqlite3.Connection = None):
@@ -117,7 +115,12 @@ def output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_h
 
 
 
-def show_trends(peak_trunk_velos, peak_before_contacts, onset_times, dates, name, gender):
+def show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gender):
+            dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+            dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
+            dates, onset_times = zip(*onset_times) if onset_times else ([],[])
+            dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
+            
             date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
             first_date = date_objects[0]
             days = [(d - first_date).days for d in date_objects]
