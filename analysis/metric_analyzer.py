@@ -119,7 +119,6 @@ def show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gende
             dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
             dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
             dates, onset_times = zip(*onset_times) if onset_times else ([],[])
-            dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
             
             date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
             first_date = date_objects[0]
