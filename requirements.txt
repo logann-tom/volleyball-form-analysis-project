@@ -18,3 +18,5 @@ scipy>=1.13,<2
 matplotlib>=3.8,<4
 
 fastapi
+
+uvicorn

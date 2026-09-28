@@ -3,7 +3,6 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 from video.player_data import PlayerData
-from video.metric_extractor import MetricExtractor
 from video.roi_tracker import ROITracker
 import cv2
 from pathlib import Path
@@ -103,13 +102,14 @@ class VideoProcessor:
         rx, ry, rw, rh = [int (v/SCALE) for v in roi]
         roi_cx = rx + rw / 2
         roi_cy = ry + rh / 2
-        self.roi_tracker.update(0,roi_cx, roi_cy)
+        self.roi_tracker.update(-1,roi_cx, roi_cy) # first_frame comes right before processed frame 0
         max_drift = rw * .6
         box_h = rh + padding
         box_w = rw + padding
 
         paused = False
         frame_num = 0
+        shown_frame = -1 # frame currently on screen; keys are read before the next frame is shown
         while self.cap.isOpened():
             if not paused:
                 ret, frame = self.cap.read()
@@ -130,17 +130,16 @@ class VideoProcessor:
                     break
                 process_frame = True
             elif key == ord('d'):
-                print(frame_num)
+                print(shown_frame)
             elif key == ord('c'):
-                self.contact_frame = frame_num
-                print(f"Contact tagged at frame {frame_num}")
+                self.contact_frame = shown_frame
+                print(f"Contact tagged at frame {shown_frame}")
             elif key == ord('r'):
                 self.reset()
                 self.process()
                 return
 
             if process_frame:
-                frame_num = frame_num + 1
                 h, w = frame.shape[:2]
                 roi_cx, roi_cy = self.roi_tracker.predict_next()
                 y_start = max(0, int(roi_cy - box_h/2))
@@ -189,9 +188,11 @@ class VideoProcessor:
                     if debug:
                         cv2.circle(frame, (int(roi_cx), int(roi_cy)), 10, (255, 0, 0), -1)
                         cv2.rectangle(frame, (x_start, y_start), (x_end, y_end), (255, 0, 0), 2)
-
                 display = cv2.resize(frame, (int(w * SCALE), int(h * SCALE)))
                 cv2.imshow("Pose", display)
+                shown_frame = frame_num
+                frame_num = frame_num + 1
+
 
 
     

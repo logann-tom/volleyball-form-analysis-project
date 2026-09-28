@@ -12,7 +12,7 @@ def migrate_to_sqlite(conn : sqlite3.Connection):
             for day, videos in user_data["sessions"].items():
                 for video_name, video_metrics in videos.items():
                     try:
-                        add_video(user, video_name, day, video_metrics["peak_trunk_velocity"], video_metrics["peak_timing_ms_before_contact"], video_metrics["onset_ms_before_contact"], video_metrics["hip_shoulder_peak_diff_ms"], conn)
+                        add_video(user, video_name, conn, day, video_metrics["peak_trunk_velocity"], video_metrics["peak_timing_ms_before_contact"], video_metrics["onset_ms_before_contact"], video_metrics["hip_shoulder_peak_diff_ms"])
                     except DuplicateVideoError:
                         continue
 

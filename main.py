@@ -1,13 +1,15 @@
 from video.metric_extractor import MetricExtractor
 from video.video_processor import VideoProcessor
 from analysis.metric_analyzer import analyze_sessions
-from db.db import get_connection
+from db.db import get_connection, init_db
 from pathlib import Path
-import json
+from exceptions.exceptions import MissingUserError
 import db.data_store as data_store
 import datetime
+
 def run():
     conn = get_connection()
+    init_db(conn)
     USER = input("Enter your name: ")
     new = data_store.get_player(USER, conn) is None
     #check if user is in data 
@@ -71,7 +73,8 @@ def run():
             print("\nExtracted Metrics:")
             print(f"  Peak trunk velocity: {new_metrics['peak_trunk_velocity']:.1f} °/s")
             print(f"  Peak timing before contact: {new_metrics['peak_timing_ms_before_contact']:.1f} ms")
-            print(f"  Onset before contact: {new_metrics['onset_ms_before_contact']:.1f} ms")
+            if(new_metrics['onset_ms_before_contact'] is not None):
+                print(f"  Onset before contact: {new_metrics['onset_ms_before_contact']:.1f} ms")
             print(f"  Hip-shoulder peak diff: {new_metrics['hip_shoulder_peak_diff_ms']:.1f} ms")
             
             
@@ -82,7 +85,8 @@ def run():
                     print("Video has already been processed, previous metrics: ")
                     print(f"  Peak trunk velocity: {video['peak_trunk_velocity']:.1f} °/s")
                     print(f"  Peak timing before contact: {video['peak_timing_ms_before_contact']:.1f} ms")
-                    print(f"  Onset before contact: {video['onset_ms_before_contact']:.1f} ms")
+                    if(video['onset_ms_before_contact'] is not None):
+                        print(f"  Onset before contact: {video['onset_ms_before_contact']:.1f} ms")
                     print(f"  Hip-shoulder peak diff: {video['hip_shoulder_peak_diff_ms']:.1f} ms")
                     overwrite = input("\nOverwrite previous session? (y/n): ")
                     if overwrite.lower() == 'y':
@@ -108,7 +112,10 @@ def run():
             extractor.close_graph()
             analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
             if analyze.lower() == 'y':
-                analyze_sessions(USER, conn)
+                try:
+                    analyze_sessions(USER, conn)
+                except MissingUserError as e:
+                    print(e)
             done = True
         else:
             print("You have to tag a contact frame with key c")

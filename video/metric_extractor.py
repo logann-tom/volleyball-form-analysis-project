@@ -18,14 +18,17 @@ class MetricExtractor:
         hip_angles = angles[:,1]
         shoulder_smooth = savgol_filter(shoulder_angles, window_length=9, polyorder=2)
         hip_smooth = savgol_filter(hip_angles, window_length=9, polyorder=2)
-        shoulder_velocities = np.gradient(shoulder_smooth, 1/fps) 
-        hip_velocities = np.gradient(hip_smooth, 1/fps)
+        #frames with no pose detection are missing, so use real timestamps instead of a fixed 1/fps spacing
+        frame_times = np.array(self.frames) / fps
+        shoulder_velocities = np.gradient(shoulder_smooth, frame_times)
+        hip_velocities = np.gradient(hip_smooth, frame_times)
         self.shoulder_velocities_deg = shoulder_velocities * -1 * 180 / np.pi
         self.hip_velocities_deg = hip_velocities * -1 * 180 / np.pi
         self.contact_frame = contact_frame
 
-        self.window_start = math.floor(contact_frame - ANALYSIS_WINDOW[0] * fps)
-        self.window_end = math.ceil(contact_frame + ANALYSIS_WINDOW[1] * fps)
+        #window_start/window_end are POSITIONS into the velocity arrays, found by frame number
+        self.window_start = int(np.searchsorted(self.frames, math.floor(contact_frame - ANALYSIS_WINDOW[0] * fps), side='left'))
+        self.window_end = int(np.searchsorted(self.frames, math.ceil(contact_frame + ANALYSIS_WINDOW[1] * fps), side='right'))
         self.fig = None
 
     def graph_velocities(self):
@@ -54,15 +57,17 @@ class MetricExtractor:
         return None
 
 
-    #CONTACT FRAME SHLD BE REALTIVE TO START OF VELOCITIES ARRAY
+    #argmax/onset give positions in the window, map them back to real frame numbers before timing against contact
     def get_metrics(self):
         windowed_shoulder = self.shoulder_velocities_deg[self.window_start:self.window_end]
         windowed_hip = self.hip_velocities_deg[self.window_start:self.window_end]
-        contact_frame = self.contact_frame - self.window_start
-        max_shoulder_velocity_frame = np.argmax(windowed_shoulder) 
-        max_shoulder_velocity = windowed_shoulder[max_shoulder_velocity_frame]
+        windowed_frames = self.frames[self.window_start:self.window_end]
+        contact_frame = self.contact_frame
+        max_shoulder_velocity_idx = np.argmax(windowed_shoulder)
+        max_shoulder_velocity = windowed_shoulder[max_shoulder_velocity_idx]
+        max_shoulder_velocity_frame = windowed_frames[max_shoulder_velocity_idx]
 
-        max_hip_velocity_frame = np.argmax(windowed_hip)
+        max_hip_velocity_frame = windowed_frames[np.argmax(windowed_hip)]
 
         delta_shoulder = contact_frame - max_shoulder_velocity_frame
         #in MS
@@ -70,11 +75,11 @@ class MetricExtractor:
         
         #get when trunk(shoulder starts rotating)
         #TODO can this really be None?
-        shoulder_onset_frame = self.get_onset_frame(windowed_shoulder)
-        if shoulder_onset_frame is None:
+        shoulder_onset_idx = self.get_onset_frame(windowed_shoulder)
+        if shoulder_onset_idx is None:
             shoulder_onset_before_contact = None
-        else: 
-            shoulder_onset_before_contact = (contact_frame - shoulder_onset_frame) / self.fps * 1000
+        else:
+            shoulder_onset_before_contact = (contact_frame - windowed_frames[shoulder_onset_idx]) / self.fps * 1000
 
         #get difference in hip -> shoulder max velocity
         hip_shoulder_max_diff = (max_shoulder_velocity_frame - max_hip_velocity_frame) / self.fps * 1000
