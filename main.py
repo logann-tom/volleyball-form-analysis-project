@@ -18,6 +18,7 @@ def run():
         while GENDER.lower() not in ["male", "female"]:
             GENDER = input("Gender must be Male or Female: ") 
         data_store.add_player(USER, GENDER, conn)
+    player_id = data_store._get_player_id(USER, conn)
     
     #get video path
     valid_video = False
@@ -113,7 +114,7 @@ def run():
             analyze = input(f"Analyze {USER}\'s sessions? (y/n)")
             if analyze.lower() == 'y':
                 try:
-                    analyze_sessions(USER, conn)
+                    analyze_sessions(player_id, conn)
                 except MissingUserError as e:
                     print(e)
             done = True

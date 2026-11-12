@@ -22,26 +22,28 @@ BENCHMARKS = {
     }
 }
 
-def analyze_sessions(name, conn :sqlite3.Connection = None):
-    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
+def analyze_sessions(id : int, conn :sqlite3.Connection = None):
+    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
     avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
     num_vids = len(peak_trunk_velos)
-    gender = data_store.get_player(name,conn)['gender']
+    player = data_store._get_player_by_id(id,conn)
+    gender = player['gender']
+    name = player['name']
     _output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids)
     _show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gender)
 
     
-def get_aggregate_metrics(name, conn : sqlite3.Connection = None):
+def get_aggregate_metrics(id : int, conn : sqlite3.Connection = None):
     if conn is None:
          conn = get_connection()
-    player = data_store.get_player(name, conn)
+    player = data_store._get_player_by_id(id, conn)
     if player is None: 
         raise MissingUserError("Player does not exist, Cannot get metrics")
     peak_trunk_velos = []
     peak_before_contacts = []
     onset_times = []
     hip_shoulder_sep_times = []
-    videos = data_store.get_all_videos(name, conn)
+    videos = data_store.get_all_videos_by_id(id, conn)
     for video in sorted(videos, key = lambda vid : vid['date']):
         peak_trunk_velos.append((video['date'], video["peak_trunk_velocity"]))
         peak_before_contacts.append((video['date'], video["peak_timing_ms_before_contact"]))
@@ -50,26 +52,31 @@ def get_aggregate_metrics(name, conn : sqlite3.Connection = None):
 
     return peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times
 
-def get_trends(name, conn):
-            peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
-            dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
-            dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
-            dates, onset_times = zip(*onset_times) if onset_times else ([],[])
-            dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
-            
-            #get users trends over time using linear regression
-            date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
-            first_date = date_objects[0]
-            days = [(d - first_date).days for d in date_objects]
-            print(f"==== {name}\'s TRENDS =====")
-            trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
-            peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
-            onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
-            hip_sep_trend, hip_sep_intercept = np.polyfit(days, hip_shoulder_sep_times, deg=1)
-            return trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend
+def get_trends(id : int, conn):
+    player =  data_store._get_player_by_id(id, conn)
+    if player is None:
+        raise MissingUserError("Player does not exist, Cannot get metrics")
+    name =player['name']
+    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
+    dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+    dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
+    dates, onset_times = zip(*onset_times) if onset_times else ([],[])
+    dates, hip_shoulder_sep_times = zip(*hip_shoulder_sep_times) if hip_shoulder_sep_times else ([],[])
+    if(len(dates) == 0 or len(dates) == 1):
+        raise MissingVideoError("Not enough videos to have trends")
+    #get users trends over time using linear regression
+    date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
+    first_date = date_objects[0]
+    days = [(d - first_date).days for d in date_objects]
+    print(f"==== {name}\'s TRENDS =====")
+    trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
+    peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
+    onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
+    hip_sep_trend, hip_sep_intercept = np.polyfit(days, hip_shoulder_sep_times, deg=1)
+    return trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend
 
-def get_averages(name, conn):
-    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(name, conn)
+def get_averages(id : int, conn):
+    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
     return _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
 
 def _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times):
@@ -91,80 +98,80 @@ def _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip
        
 def _output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids):
             
-            #get benchmarks
-            benchmark_peak_trunk_velo = BENCHMARKS[gender]["peak_trunk_velocity"]
-            benchmark_junior_peak_timing_ms = BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"]
-            benchmark_pro_peak_timing_ms = BENCHMARKS[gender]["peak_timing_ms_before_contact"]["pro"]
-            benchmark_junior_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["junior"]
-            benchmark_pro_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["pro"]
-            #print
-            print(f"==== Performance Analysis for {name} ====")
-            print(f"Valid sessions analyzed: {num_vids}\n")
+    #get benchmarks
+    benchmark_peak_trunk_velo = BENCHMARKS[gender]["peak_trunk_velocity"]
+    benchmark_junior_peak_timing_ms = BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"]
+    benchmark_pro_peak_timing_ms = BENCHMARKS[gender]["peak_timing_ms_before_contact"]["pro"]
+    benchmark_junior_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["junior"]
+    benchmark_pro_onset_timing_ms = BENCHMARKS[gender]["onset_ms_before_contact"]["pro"]
+    #print
+    print(f"==== Performance Analysis for {name} ====")
+    print(f"Valid sessions analyzed: {num_vids}\n")
 
-            print(f"  Average Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
-            print(f"  Benchmark: {benchmark_peak_trunk_velo} °/s")
-            print(f"  {_get_feedback(avg_peak_trunk_velo, benchmark_peak_trunk_velo, benchmark_peak_trunk_velo)}\n")
+    print(f"  Average Peak Trunk Velocity:      {avg_peak_trunk_velo:.1f} °/s")
+    print(f"  Benchmark: {benchmark_peak_trunk_velo} °/s")
+    print(f"  {_get_feedback(avg_peak_trunk_velo, benchmark_peak_trunk_velo, benchmark_peak_trunk_velo)}\n")
 
-            print(f"  Average Peak Timing Before Contact: {avg_peak_timing_ms:.1f} ms")
-            print(f"  Benchmarks — Junior: {benchmark_junior_peak_timing_ms} ms | Pro: {benchmark_pro_peak_timing_ms} ms")
-            print(f"  {_get_feedback(avg_peak_timing_ms, benchmark_junior_peak_timing_ms, benchmark_pro_peak_timing_ms, higher_is_better=False)}\n")
+    print(f"  Average Peak Timing Before Contact: {avg_peak_timing_ms:.1f} ms")
+    print(f"  Benchmarks — Junior: {benchmark_junior_peak_timing_ms} ms | Pro: {benchmark_pro_peak_timing_ms} ms")
+    print(f"  {_get_feedback(avg_peak_timing_ms, benchmark_junior_peak_timing_ms, benchmark_pro_peak_timing_ms, higher_is_better=False)}\n")
 
-            print(f"  Average Onset Before Contact:     {avg_onset_ms:.1f} ms")
-            print(f"  Benchmarks — Junior: {benchmark_junior_onset_timing_ms} ms | Pro: {benchmark_pro_onset_timing_ms} ms")
-            print(f"  {_get_feedback(avg_onset_ms, benchmark_junior_onset_timing_ms, benchmark_pro_onset_timing_ms, higher_is_better=False)}\n")
+    print(f"  Average Onset Before Contact:     {avg_onset_ms:.1f} ms")
+    print(f"  Benchmarks — Junior: {benchmark_junior_onset_timing_ms} ms | Pro: {benchmark_pro_onset_timing_ms} ms")
+    print(f"  {_get_feedback(avg_onset_ms, benchmark_junior_onset_timing_ms, benchmark_pro_onset_timing_ms, higher_is_better=False)}\n")
 
 
-            print(f"  Average Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
-            print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
+    print(f"  Average Hip Velocity Peak Before Shoulder {avg_hip_shoulder_peak_dif:.1f} ms")
+    print("  (Hips should peak before shoulders — positive value indicates good kinetic chain sequencing)")
 
 
 
 
 def _show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gender):
-            dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
-            dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
-            dates, onset_times = zip(*onset_times) if onset_times else ([],[])
-            
-            date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
-            first_date = date_objects[0]
-            days = [(d - first_date).days for d in date_objects]
-            print(f"==== {name}\'s TRENDS =====")
-            trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
-            print(f"  Trunk Velocity Trend: {trunk_velo_slope:+.1f} °/s per day")
-            peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
-            print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per day")
-            onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
-            print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per day")
+    dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
+    dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
+    dates, onset_times = zip(*onset_times) if onset_times else ([],[])
+    
+    date_objects = [datetime.datetime.strptime(d, "%Y-%m-%d") for d in dates]
+    first_date = date_objects[0]
+    days = [(d - first_date).days for d in date_objects]
+    print(f"==== {name}\'s TRENDS =====")
+    trunk_velo_slope, trunk_velo_intercept = np.polyfit(days, peak_trunk_velos, deg=1)
+    print(f"  Trunk Velocity Trend: {trunk_velo_slope:+.1f} °/s per day")
+    peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
+    print(f"  Peak Velocity Before Contact Trend: {peak_timing_trend:+.1f} ms per day")
+    onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
+    print(f"  Rotation Start Before Contact Trend: {onset_timing_trend:+.1f} ms per day")
 
-            x_line = np.linspace(min(days), max(days), 100)
+    x_line = np.linspace(min(days), max(days), 100)
 
-            fig, axes = plt.subplots(3, 1, figsize=(10, 10))
+    fig, axes = plt.subplots(3, 1, figsize=(10, 10))
 
-            axes[0].scatter(days, peak_trunk_velos, color='blue', label='Sessions')
-            axes[0].plot(x_line, trunk_velo_slope * x_line + trunk_velo_intercept, color='red', label='Trend')
-            axes[0].axhline(y=BENCHMARKS[gender]["peak_trunk_velocity"], color='green', linestyle='--', label='Benchmark')
-            axes[0].set_ylabel('Peak Trunk Velocity (°/s)')
-            axes[0].legend()
+    axes[0].scatter(days, peak_trunk_velos, color='blue', label='Sessions')
+    axes[0].plot(x_line, trunk_velo_slope * x_line + trunk_velo_intercept, color='red', label='Trend')
+    axes[0].axhline(y=BENCHMARKS[gender]["peak_trunk_velocity"], color='green', linestyle='--', label='Benchmark')
+    axes[0].set_ylabel('Peak Trunk Velocity (°/s)')
+    axes[0].legend()
 
-            axes[1].scatter(days, peak_before_contacts, color='blue', label='Sessions')
-            axes[1].plot(x_line, peak_timing_trend * x_line + peak_timing_intercept, color='red', label='Trend')
-            axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
-            axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
-            axes[1].set_ylabel('Peak Timing (ms)')
-            axes[1].legend()
+    axes[1].scatter(days, peak_before_contacts, color='blue', label='Sessions')
+    axes[1].plot(x_line, peak_timing_trend * x_line + peak_timing_intercept, color='red', label='Trend')
+    axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
+    axes[1].axhline(y=BENCHMARKS[gender]["peak_timing_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
+    axes[1].set_ylabel('Peak Timing (ms)')
+    axes[1].legend()
 
-            axes[2].scatter(days, onset_times, color='blue', label='Sessions')
-            axes[2].plot(x_line, onset_timing_trend * x_line + onset_timing_intercept, color='red', label='Trend')
-            axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
-            axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
-            axes[2].set_ylabel('Onset (ms)')
-            axes[2].set_xlabel('Days since first session')
-            axes[2].legend()
+    axes[2].scatter(days, onset_times, color='blue', label='Sessions')
+    axes[2].plot(x_line, onset_timing_trend * x_line + onset_timing_intercept, color='red', label='Trend')
+    axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["junior"], color='orange', linestyle='--', label='Junior benchmark')
+    axes[2].axhline(y=BENCHMARKS[gender]["onset_ms_before_contact"]["pro"], color='green', linestyle='--', label='Pro benchmark')
+    axes[2].set_ylabel('Onset (ms)')
+    axes[2].set_xlabel('Days since first session')
+    axes[2].legend()
 
-            fig.tight_layout()
-            fig.savefig("trends.png")
-            plt.show()
-            close_figure(fig)
+    fig.tight_layout()
+    fig.savefig("trends.png")
+    plt.show()
+    close_figure(fig)
             
 
 

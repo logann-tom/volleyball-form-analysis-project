@@ -6,6 +6,7 @@ from exceptions.exceptions import MissingVideoError, DuplicateVideoError, Missin
 Methods needed:
 
 GETTERS:
+get all players
 Get player (by name, by id) name for terminal, id for api
 Get ids (from player name) name getter wraps id getters
 
@@ -29,6 +30,10 @@ _get_player_by_id (gets player object from id)
 #get by name looks for id by name and returns none if no exist, 
 #get by id means we are assuming id exists so throws exception if no exist
 
+def get_players(conn :sqlite3.Connection):
+    cursor = conn.cursor()
+    players = cursor.execute("SELECT * FROM users ORDER BY id").fetchall()
+    return players
 def get_player(name : str, conn : sqlite3.Connection):
     cursor = conn.cursor()
     player = cursor.execute('SELECT * FROM users WHERE name = ?', (name,)).fetchone()
@@ -44,7 +49,7 @@ def _get_player_id(name : str, conn : sqlite3.Connection):
 
 def _get_player_by_id(id :int, conn :sqlite3.Connection):
     cursor = conn.cursor()
-    player = cursor.execute('SELECT 1 FROM users WHERE id = ?)', (id,)).fetchone()
+    player = cursor.execute('SELECT * FROM users WHERE id = ?', (id,)).fetchone()
     if(player is None):
         return None
     return player
@@ -72,7 +77,7 @@ def get_video_from_ids(player_id :int, video_id :int, conn : sqlite3.Connection)
     if(_get_player_by_id(player_id, conn) is None):
         raise MissingUserError("This player id does not exist")
     cursor = conn.cursor()
-    vid = cursor.execute("SELECT 1 from videos WHERE user_id = ? AND id = ?", (player_id, video_id)).fetchone()
+    vid = cursor.execute("SELECT * from videos WHERE user_id = ? AND id = ?", (player_id, video_id)).fetchone()
     if(vid is None):
         raise MissingVideoError("video you are trying to get is not owned by player or doesnt exist")
     return vid
