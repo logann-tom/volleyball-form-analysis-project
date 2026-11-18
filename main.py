@@ -3,7 +3,7 @@ from video.video_processor import VideoProcessor
 from analysis.metric_analyzer import analyze_sessions
 from db.db import get_connection, init_db
 from pathlib import Path
-from exceptions.exceptions import MissingUserError
+from exceptions.exceptions import MissingUserError, MissingVideoError
 import db.data_store as data_store
 import datetime
 
@@ -11,9 +11,10 @@ def run():
     conn = get_connection()
     init_db(conn)
     USER = input("Enter your name: ")
-    new = data_store.get_player(USER, conn) is None
-    #check if user is in data 
-    if new:
+    #check if user is in data
+    try:
+        data_store.get_player(USER, conn)
+    except MissingUserError:
         GENDER = input("Gender (Male/Female): ")
         while GENDER.lower() not in ["male", "female"]:
             GENDER = input("Gender must be Male or Female: ") 
@@ -34,7 +35,10 @@ def run():
     valid_date = False
     VIDEO_DATE = None
     date_change = False
-    video = data_store.get_video(USER, VIDEO_PATH, conn)
+    try:
+        video = data_store.get_video(USER, VIDEO_PATH, conn)
+    except MissingVideoError:
+        video = None
     if video is not None:
         re_enter_date = input("This video is already tracked in a session, would you like to change its date? (y/n)")
         if re_enter_date.lower() == "n":

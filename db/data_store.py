@@ -27,46 +27,35 @@ _get_player_by_id (gets player object from id)
 
 """
 #region Getters
-#get by name looks for id by name and returns none if no exist, 
-#get by id means we are assuming id exists so throws exception if no exist
+#all getters raise on a missing record: MissingUserError for a player, MissingVideoError for a video
+#an existing player with no videos is not missing, so the list getters return []
 
 def get_players(conn :sqlite3.Connection):
     cursor = conn.cursor()
     players = cursor.execute("SELECT * FROM users ORDER BY id").fetchall()
     return players
-def get_player(name : str, conn : sqlite3.Connection):
+def get_player(name : str, conn : sqlite3.Connection): 
     cursor = conn.cursor()
     player = cursor.execute('SELECT * FROM users WHERE name = ?', (name,)).fetchone()
-    if(player is None):
-        return None
+    if player is None:
+        raise MissingUserError(f"User {name} does not exist")
     return player
 
 def _get_player_id(name : str, conn : sqlite3.Connection):
-    player = get_player(name,conn)
-    if(player is None):
-        return None
-    return player['id']
+    return get_player(name, conn)['id']
 
 def _get_player_by_id(id :int, conn :sqlite3.Connection):
     cursor = conn.cursor()
     player = cursor.execute('SELECT * FROM users WHERE id = ?', (id,)).fetchone()
-    if(player is None):
-        return None
+    if player is None:
+        raise MissingUserError("This player id does not exist")
     return player
 
 def get_video(name : str, video_path : str, conn : sqlite3.Connection):
-    id = _get_player_id(name, conn)
-    if(id is None):
-        return None
-    else:
-        try:
-            return get_video_from_id(id, video_path, conn)
-        except MissingVideoError, MissingUserError: 
-            return None
+    return get_video_from_id(_get_player_id(name, conn), video_path, conn)
 
 def get_video_from_id(player_id :int, video_path : str, conn : sqlite3.Connection):
-    if(_get_player_by_id(player_id, conn) is None):
-        raise MissingUserError("This player id does not exist")
+    _get_player_by_id(player_id, conn)
     cursor = conn.cursor()
     vid = cursor.execute('SELECT * from videos where user_id = ? AND video_path = ?', (player_id, video_path)).fetchone()
     if(vid is None):
@@ -74,8 +63,7 @@ def get_video_from_id(player_id :int, video_path : str, conn : sqlite3.Connectio
     return vid
 
 def get_video_from_ids(player_id :int, video_id :int, conn : sqlite3.Connection):
-    if(_get_player_by_id(player_id, conn) is None):
-        raise MissingUserError("This player id does not exist")
+    _get_player_by_id(player_id, conn)
     cursor = conn.cursor()
     vid = cursor.execute("SELECT * from videos WHERE user_id = ? AND id = ?", (player_id, video_id)).fetchone()
     if(vid is None):
@@ -84,13 +72,10 @@ def get_video_from_ids(player_id :int, video_id :int, conn : sqlite3.Connection)
 
 
 def get_all_videos(name :str, conn : sqlite3.Connection):
-    id = _get_player_id(name, conn)
-    if id is None:
-        return None
-    else:
-        return get_all_videos_by_id(id, conn)
+    return get_all_videos_by_id(_get_player_id(name, conn), conn)
 
 def get_all_videos_by_id(id :int, conn : sqlite3.Connection):
+    _get_player_by_id(id, conn)
     cursor = conn.cursor()
     vids = cursor.execute('SELECT * FROM videos where user_id = ?', (id,)).fetchall()
     return vids
@@ -103,19 +88,13 @@ def update_video_date(name:str, video_path :str, conn : sqlite3.Connection, date
     except ValueError: 
         raise ValueError("Date format must be in YYYY-MM-DD")
     cursor = conn.cursor()
-    vid = get_video(name, video_path, conn)
-    if vid is None:
-        raise MissingVideoError("Video does not exist")
-    vid_id = vid["id"]
+    vid_id = get_video(name, video_path, conn)["id"]
     cursor.execute('UPDATE videos SET date = ? WHERE id = ?', (date, vid_id))
     conn.commit()
 
 def update_video_metrics(name,video_path, conn : sqlite3.Connection, trunk_velo , timing_before , onset , hip_sep ):
     cursor = conn.cursor()
-    vid = get_video(name, video_path, conn)
-    if vid is None:
-        raise MissingVideoError("Video does not exist")
-    vid_id = vid["id"]
+    vid_id = get_video(name, video_path, conn)["id"]
     cursor.execute('UPDATE videos SET (peak_trunk_velocity, peak_timing_ms_before_contact, onset_ms_before_contact, hip_shoulder_peak_diff_ms) = (?,?,?,?) WHERE id = ?', (trunk_velo , timing_before , onset , hip_sep, vid_id,))
     conn.commit()
 
@@ -130,13 +109,13 @@ def add_player(name :str, gender :str, conn : sqlite3.Connection):
 
 def add_video(name :str , video_path:str, conn : sqlite3.Connection, date, trunk_velo, timing_before, onset, hip_sep):
     cursor = conn.cursor()
-    if(get_video(name, video_path, conn) is not None):
-        raise DuplicateVideoError("Video already exists")
-    player = get_player(name, conn)
-    if player is not None:
-        player_id = player["id"]
+    player_id = _get_player_id(name, conn)
+    try:
+        get_video_from_id(player_id, video_path, conn)
+    except MissingVideoError:
+        pass
     else:
-        raise MissingUserError(f"User {name} does not exist")
+        raise DuplicateVideoError("Video already exists")
     cursor.execute('INSERT into videos (user_id, video_path, date, peak_trunk_velocity, peak_timing_ms_before_contact, onset_ms_before_contact, hip_shoulder_peak_diff_ms) VALUES (?,?,?,?,?,?,?)',(player_id, video_path, date, trunk_velo, timing_before, onset, hip_sep))
     conn.commit()
 #endregion

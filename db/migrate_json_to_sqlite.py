@@ -1,13 +1,15 @@
 import json
 import sqlite3
-from db.data_store import get_player, add_player, add_video, DuplicateVideoError
+from db.data_store import get_player, add_player, add_video, DuplicateVideoError, MissingUserError
 from db.db import init_db, get_connection
 def migrate_to_sqlite(conn : sqlite3.Connection):
     with open("data.json") as json_file:
         loaded_data = json.load(json_file)
         for user, user_data  in loaded_data.items(): 
             #add player if not exist but if already exist just add data
-            if get_player(user, conn) is None:
+            try:
+                get_player(user, conn)
+            except MissingUserError:
                 add_player(user, user_data["gender"], conn)
             for day, videos in user_data["sessions"].items():
                 for video_name, video_metrics in videos.items():

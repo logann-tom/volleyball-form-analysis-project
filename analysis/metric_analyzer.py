@@ -23,22 +23,21 @@ BENCHMARKS = {
 }
 
 def analyze_sessions(id : int, conn :sqlite3.Connection = None):
-    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
-    avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif = _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
-    num_vids = len(peak_trunk_velos)
+    aggregate = get_aggregate_metrics(id, conn)
+    averages = _calculate_averages(**aggregate)
+    num_vids = len(aggregate["peak_trunk_velos"])
     player = data_store._get_player_by_id(id,conn)
     gender = player['gender']
     name = player['name']
-    _output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids)
-    _show_trends(peak_trunk_velos, peak_before_contacts, onset_times, name, gender)
+    _output_averages(averages["avg_peak_trunk_velocity"], averages["avg_peak_timing_ms_before_contact"],
+                     averages["avg_onset_ms_before_contact"], averages["avg_hip_shoulder_peak_diff_ms"],
+                     name, gender, num_vids)
+    _show_trends(aggregate["peak_trunk_velos"], aggregate["peak_before_contacts"], aggregate["onset_times"], name, gender)
 
     
 def get_aggregate_metrics(id : int, conn : sqlite3.Connection = None):
     if conn is None:
          conn = get_connection()
-    player = data_store._get_player_by_id(id, conn)
-    if player is None: 
-        raise MissingUserError("Player does not exist, Cannot get metrics")
     peak_trunk_velos = []
     peak_before_contacts = []
     onset_times = []
@@ -49,15 +48,18 @@ def get_aggregate_metrics(id : int, conn : sqlite3.Connection = None):
         peak_before_contacts.append((video['date'], video["peak_timing_ms_before_contact"]))
         onset_times.append((video['date'], video["onset_ms_before_contact"]))
         hip_shoulder_sep_times.append((video['date'], video["hip_shoulder_peak_diff_ms"]))
-
-    return peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times
+    return {"peak_trunk_velos": peak_trunk_velos,
+            "peak_before_contacts": peak_before_contacts,
+            "onset_times" :onset_times,
+            "hip_shoulder_sep_times":hip_shoulder_sep_times}
 
 def get_trends(id : int, conn):
-    player =  data_store._get_player_by_id(id, conn)
-    if player is None:
-        raise MissingUserError("Player does not exist, Cannot get metrics")
-    name =player['name']
-    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
+    name = data_store._get_player_by_id(id, conn)['name']
+    aggregate = get_aggregate_metrics(id, conn)
+    peak_trunk_velos = aggregate["peak_trunk_velos"]
+    peak_before_contacts = aggregate["peak_before_contacts"]
+    onset_times = aggregate["onset_times"]
+    hip_shoulder_sep_times = aggregate["hip_shoulder_sep_times"]
     dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
     dates, peak_before_contacts = zip(*peak_before_contacts) if peak_before_contacts else ([],[])
     dates, onset_times = zip(*onset_times) if onset_times else ([],[])
@@ -73,11 +75,13 @@ def get_trends(id : int, conn):
     peak_timing_trend, peak_timing_intercept = np.polyfit(days, peak_before_contacts,deg=1)
     onset_timing_trend, onset_timing_intercept  = np.polyfit(days, onset_times,deg=1)
     hip_sep_trend, hip_sep_intercept = np.polyfit(days, hip_shoulder_sep_times, deg=1)
-    return trunk_velo_slope, peak_timing_trend, onset_timing_trend, hip_sep_trend
+    return {"trunk_velo_slope":trunk_velo_slope,
+            "peak_timing_trend":peak_timing_trend,
+            "onset_timing_trend":onset_timing_trend,
+            "hip_sep_trend":hip_sep_trend}
 
 def get_averages(id : int, conn):
-    peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times = get_aggregate_metrics(id, conn)
-    return _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times)
+    return _calculate_averages(**get_aggregate_metrics(id, conn))
 
 def _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip_shoulder_sep_times):
     dates, peak_trunk_velos = zip(*peak_trunk_velos) if peak_trunk_velos else ([], [])
@@ -93,7 +97,10 @@ def _calculate_averages(peak_trunk_velos, peak_before_contacts, onset_times, hip
     avg_onset_ms = sum(onset_times) / num_vids
     avg_hip_shoulder_peak_dif = sum(hip_shoulder_sep_times) / num_vids
 
-    return avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif
+    return {"avg_peak_trunk_velocity":avg_peak_trunk_velo,
+            "avg_peak_timing_ms_before_contact":avg_peak_timing_ms,
+            "avg_onset_ms_before_contact":avg_onset_ms,
+            "avg_hip_shoulder_peak_diff_ms":avg_hip_shoulder_peak_dif}
 
        
 def _output_averages(avg_peak_trunk_velo, avg_peak_timing_ms, avg_onset_ms, avg_hip_shoulder_peak_dif, name, gender, num_vids):
